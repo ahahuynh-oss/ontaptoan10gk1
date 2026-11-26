@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mô phỏng 3D Tích vô hướng Oxyz - Toán 12</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@500;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Be Vietnam Pro', sans-serif;
+      background-color: #F8FAFC;
+      user-select: none;
+    }
+    .math-font {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Ký hiệu toán học chuẩn vectơ có mũi tên trên đầu */
+    .vec {
+      position: relative;
+      display: inline-block;
+      font-style: italic;
+      font-weight: 800;
+      padding: 0 2px;
+      margin-top: 0.32em;
+      line-height: 1;
+    }
+    .vec::before {
+      content: "";
+      position: absolute;
+      top: -0.34em;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0.85em;
+      height: 0.36em;
+      background-color: currentColor;
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 10'%3E%3Cpath d='M1 5h19M15 1l5 4-5 4' stroke='black' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / contain;
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 10'%3E%3Cpath d='M1 5h19M15 1l5 4-5 4' stroke='black' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / contain;
+    }
+    #canvas-container {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+    /* Custom Scrollbar cho panel */
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 9999px;
+    }
+    input[type="number"] {
+      user-select: text;
+    }
+    /* Thanh kéo thay đổi kích thước bảng điều khiển */
+    #panel-resizer {
+      position: absolute;
+      top: 0;
+      left: -5px;
+      width: 10px;
+      height: 100%;
+      cursor: ew-resize;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #panel-resizer:hover .resizer-pill,
+    #panel-resizer.resizing .resizer-pill {
+      background-color: #0284C7;
+      height: 56px;
+      width: 5px;
+    }
+    .resizer-pill {
+      width: 4px;
+      height: 36px;
+      background-color: #94A3B8;
+      border-radius: 9999px;
+      transition: all 0.2s ease;
+    }
+  </style>
+</head>
+<body>
+  <!-- Khung hiển thị 3D toàn màn hình -->
+  <div id="canvas-container"></div>
+
+  <!-- Thanh tiêu đề & Góc nhìn camera phía trên bên trái -->
+  <div class="fixed top-4 left-4 z-20 flex flex-col gap-2.5 max-w-[calc(100vw-32px)] sm:max-w-md pointer-events-none">
+    <div class="bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-lg rounded-2xl px-4 py-3 pointer-events-auto">
+      <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-sky-700 mb-0.5">
+        <i class="fa-solid fa-cube"></i>
+        <span>Toán 12 • Không gian Oxyz</span>
+      </div>
+      <h1 class="text-base sm:text-lg font-extrabold text-slate-900 leading-snug">
+        Thí nghiệm: Biểu thức tọa độ tích vô hướng
+      </h1>
+      <p class="text-xs text-slate-500 mt-0.5">
+        Kéo chuột trái để xoay 3D • Cuộn để phóng to/thu nhỏ
+      </p>
+    </div>
+
+    <!-- Thanh công cụ góc nhìn nhanh -->
+    <div class="flex flex-wrap items-center gap-1.5 pointer-events-auto">
+      <button onclick="setCameraPreset('default')" class="px-3 py-1.5 rounded-xl bg-white/90 hover:bg-sky-50 text-slate-700 hover:text-sky-700 border border-slate-200 shadow-sm text-xs font-bold transition flex items-center gap-1.5">
+        <i class="fa-solid fa-house"></i> Góc chuẩn
+      </button>
+      <button onclick="setCameraPreset('oxy')" class="px-3 py-1.5 rounded-xl bg-white/90 hover:bg-sky-50 text-slate-700 hover:text-sky-700 border border-slate-200 shadow-sm text-xs font-bold transition">
+        Mặt phẳng (Oxy)
+      </button>
+      <button onclick="setCameraPreset('oxz')" class="px-3 py-1.5 rounded-xl bg-white/90 hover:bg-sky-50 text-slate-700 hover:text-sky-700 border border-slate-200 shadow-sm text-xs font-bold transition">
+        Mặt phẳng (Oxz)
+      </button>
+      <button id="btn-autorotate" onclick="toggleAutoRotate()" class="px-3 py-1.5 rounded-xl bg-white/90 hover:bg-amber-50 text-slate-700 hover:text-amber-700 border border-slate-200 shadow-sm text-xs font-bold transition flex items-center gap-1.5">
+        <i class="fa-solid fa-rotate"></i> <span id="autorotate-text">Tự xoay: Tắt</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Nút mở lại bảng điều khiển khi đang thu gọn -->
+  <button id="btn-open-panel" onclick="togglePanel(true)" class="hidden fixed top-4 right-4 z-30 px-4 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-sm shadow-xl hover:bg-slate-800 transition items-center gap-2">
+    <i class="fa-solid fa-sliders"></i> Mở bảng điều khiển
+  </button>
+
+  <!-- Bảng điều khiển thí nghiệm bên phải (Có thể thay đổi kích thước) -->
+  <aside id="control-panel" style="width: 440px;" class="fixed top-4 right-4 bottom-4 max-w-[94vw] z-20 bg-white/95 backdrop-blur-md border border-slate-200 shadow-2xl rounded-2xl flex flex-col overflow-visible transition-shadow duration-300">
+    
+    <!-- Thanh kéo thay đổi kích thước cạnh trái -->
+    <div id="panel-resizer" title="Kéo sang trái/phải để thay đổi kích thước bảng điều khiển">
+      <div class="resizer-pill"></div>
+    </div>
+
+    <!-- Header Panel -->
+    <div class="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between shrink-0 rounded-t-2xl">
+      <div class="flex items-center gap-2.5">
+        <span class="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold">
+          <i class="fa-solid fa-flask"></i>
+        </span>
+        <div>
+          <h2 class="font-bold text-base leading-tight">Bảng Điều Khiển Thí Nghiệm</h2>
+          <p class="text-[11px] text-slate-400">Kéo cạnh trái để chỉnh độ rộng • Đo đạc <span class="vec">a</span> · <span class="vec">b</span></p>
+        </div>
+      </div>
+      <button onclick="togglePanel(false)" class="px-2.5 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center gap-1.5 transition" title="Thu gọn bảng điều khiển để mở rộng khung 3D">
+        <span>Thu gọn</span>
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    </div>
+
+    <!-- Nội dung cuộn của Panel -->
+    <div class="p-4 overflow-y-auto custom-scroll flex-1 space-y-4 rounded-b-2xl">
+
+      <!-- 1. Chọn chế độ dữ liệu 4 nhóm hoặc Tự nhập -->
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">1. Chọn mẫu dữ liệu thực nghiệm</span>
+          <span id="current-mode-badge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-700">Nhóm 1</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="selectGroup(1)" id="btn-group-1" class="group-btn px-3 py-2.5 rounded-xl border-2 border-sky-600 bg-sky-50 text-sky-800 font-bold text-sm text-left transition flex items-center justify-between">
+            <span><i class="fa-solid fa-users mr-1.5"></i>Nhóm 1</span>
+            <span class="text-[11px] font-semibold text-sky-600">Góc 45°</span>
+          </button>
+          <button onclick="selectGroup(2)" id="btn-group-2" class="group-btn px-3 py-2.5 rounded-xl border-2 border-slate-200 bg-white hover:border-sky-300 text-slate-700 font-bold text-sm text-left transition flex items-center justify-between">
+            <span><i class="fa-solid fa-users mr-1.5"></i>Nhóm 2</span>
+            <span class="text-[11px] font-normal text-slate-400">Vuông 90°</span>
+          </button>
+          <button onclick="selectGroup(3)" id="btn-group-3" class="group-btn px-3 py-2.5 rounded-xl border-2 border-slate-200 bg-white hover:border-sky-300 text-slate-700 font-bold text-sm text-left transition flex items-center justify-between">
+            <span><i class="fa-solid fa-users mr-1.5"></i>Nhóm 3</span>
+            <span class="text-[11px] font-normal text-slate-400">Góc 60°</span>
+          </button>
+          <button onclick="selectGroup(4)" id="btn-group-4" class="group-btn px-3 py-2.5 rounded-xl border-2 border-slate-200 bg-white hover:border-sky-300 text-slate-700 font-bold text-sm text-left transition flex items-center justify-between">
+            <span><i class="fa-solid fa-users mr-1.5"></i>Nhóm 4</span>
+            <span class="text-[11px] font-normal text-slate-400">Góc 180°</span>
+          </button>
+        </div>
+
+        <!-- Nút bật chế độ tự nhập tọa độ -->
+        <button onclick="enableCustomMode()" id="btn-custom-mode" class="mt-2 w-full py-2 px-3 rounded-xl border border-dashed border-slate-300 hover:border-sky-500 hover:bg-sky-50/50 text-slate-600 hover:text-sky-700 text-xs font-bold transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-pen-to-square"></i>
+          <span>Tự nhập tọa độ <span class="vec">a</span> = (x; y; z) & <span class="vec">b</span> = (x'; y'; z')</span>
+        </button>
+
+        <!-- Form tự nhập tọa độ (ẩn mặc định, hiện khi chọn tự nhập) -->
+        <div id="custom-inputs-box" class="hidden mt-2.5 p-3 rounded-xl bg-slate-100 border border-slate-200 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-sm font-extrabold text-sky-700 w-16"><span class="vec">a</span> =</span>
+            <div class="grid grid-cols-3 gap-1.5 flex-1">
+              <input type="number" id="in-ax" step="0.5" value="2" class="w-full px-2 py-1.5 text-center math-font font-bold text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500" placeholder="x" />
+              <input type="number" id="in-ay" step="0.5" value="0" class="w-full px-2 py-1.5 text-center math-font font-bold text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500" placeholder="y" />
+              <input type="number" id="in-az" step="0.5" value="0" class="w-full px-2 py-1.5 text-center math-font font-bold text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-sky-500" placeholder="z" />
+            </div>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-sm font-extrabold text-orange-600 w-16"><span class="vec">b</span> =</span>
+            <div class="grid grid-cols-3 gap-1.5 flex-1">
+              <input type="number" id="in-bx" step="0.5" value="2" class="w-full px-2 py-1.5 text-center math-font font-bold text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-orange-500" placeholder="x'" />
+              <input type="number" id="in-by" step="0.5" value="2" class="w-full px-2 py-1.5 text-center math-font font-bold text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-orange-500" placeholder="y'" />
+              <input type="number" id="in-bz" step="0.5" value="0" class="w-full px-2 py-1.5 text-center math-font font-bold text-sm bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-orange-500" placeholder="z'" />
+            </div>
+          </div>
+          <button onclick="applyCustomVectors()" class="w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition">
+            Cập nhật mô hình 3D
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. Thông số đo đạc trực quan -->
+      <div class="bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 space-y-2.5">
+        <div class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center justify-between">
+          <span>2. Thông số trực quan trên Oxyz</span>
+          <i class="fa-solid fa-ruler-combined text-slate-400"></i>
+        </div>
+
+        <!-- Vectơ a -->
+        <div class="flex items-center justify-between bg-white px-3 py-2 rounded-xl border-l-4 border-sky-600 shadow-sm">
+          <div>
+            <span class="text-xs font-bold text-sky-700 block"><span class="vec">a</span> = (x; y; z)</span>
+            <span id="disp-vec-a" class="math-font font-extrabold text-base text-slate-900">(2; 0; 0)</span>
+          </div>
+          <div class="text-right">
+            <span class="text-xs text-slate-500 font-semibold block">Độ dài |<span class="vec">a</span>|</span>
+            <span id="disp-len-a" class="math-font font-extrabold text-lg text-sky-700">2</span>
+          </div>
+        </div>
+
+        <!-- Vectơ b -->
+        <div class="flex items-center justify-between bg-white px-3 py-2 rounded-xl border-l-4 border-orange-600 shadow-sm">
+          <div>
+            <span class="text-xs font-bold text-orange-600 block"><span class="vec">b</span> = (x'; y'; z')</span>
+            <span id="disp-vec-b" class="math-font font-extrabold text-base text-slate-900">(2; 2; 0)</span>
+          </div>
+          <div class="text-right">
+            <span class="text-xs text-slate-500 font-semibold block">Độ dài |<span class="vec">b</span>|</span>
+            <span id="disp-len-b" class="math-font font-extrabold text-lg text-orange-600">2√2</span>
+          </div>
+        </div>
+
+        <!-- Góc phi & cos phi -->
+        <div class="flex items-center justify-between bg-emerald-50/80 border border-emerald-200 px-3 py-2.5 rounded-xl">
+          <div>
+            <span class="text-xs font-bold text-emerald-800 block">Góc φ = (<span class="vec">a</span>, <span class="vec">b</span>)</span>
+            <span id="disp-angle" class="math-font font-extrabold text-lg text-emerald-700">45°</span>
+          </div>
+          <div class="text-right">
+            <span class="text-xs font-bold text-emerald-800 block">Giá trị cos φ</span>
+            <span id="disp-cos" class="math-font font-extrabold text-lg text-emerald-700">√2/2</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Công tắc bật/tắt kết quả tích vô hướng -->
+      <div class="bg-amber-50/90 border border-amber-200 rounded-2xl p-3.5">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="text-sm font-extrabold text-slate-900 block">Hiển thị tích vô hướng <span class="vec">a</span> · <span class="vec">b</span></span>
+            <span class="text-xs text-slate-600">Tắt để HS nhẩm |<span class="vec">a</span>|·|<span class="vec">b</span>|·cos φ</span>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="toggle-dot-result" onchange="toggleDotProductDisplay()" class="sr-only peer" />
+            <div class="w-12 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+          </label>
+        </div>
+
+        <!-- Khung kết quả ẩn/hiện -->
+        <div id="dot-result-box" class="hidden mt-3 pt-3 border-t border-amber-200/80 space-y-2">
+          <div class="flex items-baseline justify-between">
+            <span class="text-xs font-bold text-slate-700">Định nghĩa: |<span class="vec">a</span>|·|<span class="vec">b</span>|·cos φ =</span>
+            <span id="disp-dot-value" class="math-font text-2xl font-extrabold text-sky-700">4</span>
+          </div>
+          <div class="bg-white rounded-xl p-2.5 border border-amber-200">
+            <span class="text-[11px] font-bold uppercase text-orange-600 block mb-0.5">Kiểm chứng quy luật tọa độ:</span>
+            <span id="disp-coord-expansion" class="math-font text-xs sm:text-sm font-bold text-slate-800 block">
+              xx' + yy' + zz' = 2·2 + 0·2 + 0·0 = 4
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Bảng tổng hợp 4 nhóm để phát hiện quy luật -->
+      <div class="bg-white border border-slate-200 rounded-2xl p-3.5 space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-500">3. Bảng tổng hợp 4 nhóm</span>
+          <div class="flex items-center gap-1.5">
+            <button onclick="toggleTableColumn()" id="btn-toggle-table-col" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1" title="Ẩn hoặc hiện nhanh cột kết quả">
+              <i class="fa-solid fa-eye" id="icon-toggle-col"></i>
+              <span id="text-toggle-col">Ẩn kq</span>
+            </button>
+            <button onclick="recordCurrentToTable()" id="btn-record-group" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition flex items-center gap-1">
+              <i class="fa-solid fa-plus"></i>
+              <span>Ghi kq</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                <th class="py-2 px-2 font-bold">Nhóm</th>
+                <th class="py-2 px-2 font-bold"><span class="vec">a</span> = (x;y;z)</th>
+                <th class="py-2 px-2 font-bold"><span class="vec">b</span> = (x';y';z')</th>
+                <th class="py-2 px-2 font-bold text-right"><span class="vec">a</span> · <span class="vec">b</span></th>
+              </tr>
+            </thead>
+            <tbody id="summary-table-body" class="divide-y divide-slate-100 math-font">
+              <tr id="row-group-1" class="text-slate-400">
+                <td class="py-2 px-2 font-sans font-bold text-slate-700">Nhóm 1</td>
+                <td class="py-2 px-2">(2; 0; 0)</td>
+                <td class="py-2 px-2">(2; 2; 0)</td>
+                <td class="py-2 px-2 text-right font-bold dot-col-cell" id="cell-val-1">?</td>
+              </tr>
+              <tr id="row-group-2" class="text-slate-400">
+                <td class="py-2 px-2 font-sans font-bold text-slate-700">Nhóm 2</td>
+                <td class="py-2 px-2">(0; 3; 0)</td>
+                <td class="py-2 px-2">(0; 0; 2)</td>
+                <td class="py-2 px-2 text-right font-bold dot-col-cell" id="cell-val-2">?</td>
+              </tr>
+              <tr id="row-group-3" class="text-slate-400">
+                <td class="py-2 px-2 font-sans font-bold text-slate-700">Nhóm 3</td>
+                <td class="py-2 px-2">(1; 1; 0)</td>
+                <td class="py-2 px-2">(0; 1; 1)</td>
+                <td class="py-2 px-2 text-right font-bold dot-col-cell" id="cell-val-3">?</td>
+              </tr>
+              <tr id="row-group-4" class="text-slate-400">
+                <td class="py-2 px-2 font-sans font-bold text-slate-700">Nhóm 4</td>
+                <td class="py-2 px-2">(0; 0; 3)</td>
+                <td class="py-2 px-2">(0; 0; -2)</td>
+                <td class="py-2 px-2 text-right font-bold dot-col-cell" id="cell-val-4">?</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Hộp chốt quy luật (ẩn/hiện để giáo viên tổng kết) -->
+        <div id="rule-discovery-box" class="hidden bg-sky-50 border border-sky-200 rounded-xl p-2.5 text-center">
+          <span class="text-[11px] font-bold uppercase text-sky-700 block">Quy luật tổng quát:</span>
+          <span class="math-font font-extrabold text-sm text-slate-900">
+            <span class="vec">a</span> · <span class="vec">b</span> = xx' + yy' + zz'
+          </span>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <button onclick="resetSummaryTable()" class="text-[11px] font-semibold text-slate-400 hover:text-rose-600 transition">
+            <i class="fa-solid fa-rotate-left mr-1"></i>Xóa bảng
+          </button>
+          <button onclick="toggleRuleBox()" class="text-[11px] font-bold text-sky-700 hover:text-sky-900 underline transition">
+            Chốt công thức tổng quát
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- Thông báo Toast nhẹ thay cho alert() -->
+  <div id="toast-msg" class="fixed bottom-4 right-4 z-50 pointer-events-none opacity-0 transition-opacity duration-300 bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg">
+    Đã ghi nhận kết quả!
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. DỮ LIỆU THỰC NGHIỆM 4 NHÓM - CÁC VECTƠ ĐẶC BIỆT NHÌN THẤY NGAY ĐỘ DÀI
+    // =========================================================================
+    const GROUP_PRESETS = {
+      1: {
+        name: "Nhóm 1",
+        a: [2, 0, 0],
+        b: [2, 2, 0],
+        lenAText: "2",
+        lenBText: "2√2",
+        angleText: "45°",
+        cosText: "√2/2",
+        dotText: "4"
+      },
+      2: {
+        name: "Nhóm 2",
+        a: [0, 3, 0],
+        b: [0, 0, 2],
+        lenAText: "3",
+        lenBText: "2",
+        angleText: "90°",
+        cosText: "0",
+        dotText: "0"
+      },
+      3: {
+        name: "Nhóm 3",
+        a: [1, 1, 0],
+        b: [0, 1, 1],
+        lenAText: "√2",
+        lenBText: "√2",
+        angleText: "60°",
+        cosText: "1/2",
+        dotText: "1"
+      },
+      4: {
+        name: "Nhóm 4",
+        a: [0, 0, 3],
+        b: [0, 0, -2],
+        lenAText: "3",
+        lenBText: "2",
+        angleText: "180°",
+        cosText: "-1",
+        dotText: "-6"
+      }
+    };
+
+    let currentGroupId = 1; // 1..4 hoặc 0 nếu là chế độ tự nhập
+    let currentVecA = [2, 0, 0];
+    let currentVecB = [2, 2, 0];
+    let isTableColHidden = false;
+
+    // =========================================================================
+    // 2. KHỞI TẠO KHÔNG GIAN THREE.JS & HỆ TRỤC TỌA ĐỘ OXYZ CHUẨN VIỆT NAM
+    // =========================================================================
+    function mathToThree(x, y, z) {
+      return new THREE.Vector3(y, z, x);
+    }
+
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#F8FAFC');
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(7.5, 5.8, 8.2);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.target.set(0, 0.5, 0);
+    controls.minDistance = 3;
+    controls.maxDistance = 30;
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    scene.add(ambientLight);
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    dirLight.position.set(10, 15, 10);
+    scene.add(dirLight);
+
+    const axesGroup = new THREE.Group();
+    const dynamicGroup = new THREE.Group();
+    scene.add(axesGroup);
+    scene.add(dynamicGroup);
+
+    // Hàm tạo nhãn chữ Sprite sắc nét (hỗ trợ vẽ mũi tên vectơ chuẩn toán học trên đầu chữ cái)
+    function createTextSprite(text, options = {}) {
+      const {
+        fontSize = 36,
+        fontFamily = "'Be Vietnam Pro', sans-serif",
+        textColor = "#0F172A",
+        bgColor = null,
+        borderColor = null,
+        padding = 12,
+        scaleFactor = 0.016,
+        isVectorSymbol = false
+      } = options;
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const fontStyle = isVectorSymbol ? `italic 800 ${fontSize}px 'Times New Roman', Georgia, serif` : `700 ${fontSize}px ${fontFamily}`;
+      ctx.font = fontStyle;
+      const metrics = ctx.measureText(text);
+      const textWidth = Math.max(metrics.width, isVectorSymbol ? fontSize * 0.72 : 0);
+      const topExtra = isVectorSymbol ? fontSize * 0.34 : 0;
+      const textHeight = fontSize * 1.12 + topExtra;
+
+      canvas.width = Math.ceil(textWidth + padding * 2);
+      canvas.height = Math.ceil(textHeight + padding * 2);
+
+      if (bgColor) {
+        ctx.fillStyle = bgColor;
+        const r = Math.min(10, canvas.height / 2);
+        ctx.beginPath();
+        ctx.roundRect(1.5, 1.5, canvas.width - 3, canvas.height - 3, r);
+        ctx.fill();
+        if (borderColor) {
+          ctx.strokeStyle = borderColor;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+      }
+
+      ctx.font = fontStyle;
+      ctx.fillStyle = textColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      const centerX = canvas.width / 2;
+      const textY = canvas.height / 2 + topExtra * 0.42;
+      ctx.fillText(text, centerX, textY);
+
+      // Vẽ dấu mũi tên vectơ sắc nét ngay phía trên đầu chữ cái
+      if (isVectorSymbol) {
+        const arrowY = textY - fontSize * 0.54;
+        const halfArrowW = fontSize * 0.32;
+        const headSize = fontSize * 0.14;
+
+        ctx.strokeStyle = textColor;
+        ctx.lineWidth = Math.max(2, fontSize * 0.07);
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        ctx.beginPath();
+        ctx.moveTo(centerX - halfArrowW, arrowY);
+        ctx.lineTo(centerX + halfArrowW, arrowY);
+        ctx.moveTo(centerX + halfArrowW - headSize, arrowY - headSize * 0.85);
+        ctx.lineTo(centerX + halfArrowW, arrowY);
+        ctx.lineTo(centerX + halfArrowW - headSize, arrowY + headSize * 0.85);
+        ctx.stroke();
+      }
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.minFilter = THREE.LinearFilter;
+      const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+      const sprite = new THREE.Sprite(spriteMaterial);
+      sprite.scale.set(canvas.width * scaleFactor, canvas.height * scaleFactor, 1);
+      return sprite;
+    }
+
+    // Dựng hệ trục tọa độ Oxyz chuẩn
+    function buildCoordinateSystem() {
+      const axisLength = 5.2;
+      const negLength = 3.2;
+
+      const gridHelper = new THREE.GridHelper(10, 10, 0xCBD5E1, 0xE2E8F0);
+      gridHelper.position.y = -0.005;
+      axesGroup.add(gridHelper);
+
+      function createAxis(dirMath, negDirMath, colorHex, labelText) {
+        const dir = mathToThree(...dirMath).normalize();
+        const negDir = mathToThree(...negDirMath).normalize();
+
+        const negGeom = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0, 0, 0),
+          negDir.clone().multiplyScalar(negLength)
+        ]);
+        const negMat = new THREE.LineBasicMaterial({ color: 0x94A3B8, transparent: true, opacity: 0.6 });
+        axesGroup.add(new THREE.Line(negGeom, negMat));
+
+        // Vẽ phần trục dương từ O đến hết chiều dài axisLength
+        const posGeom = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0, 0, 0),
+          dir.clone().multiplyScalar(axisLength)
+        ]);
+        const posMat = new THREE.LineBasicMaterial({ color: colorHex });
+        axesGroup.add(new THREE.Line(posGeom, posMat));
+
+        // Vẽ đầu mũi tên ở đầu trục dương (Ox hướng ra trước, Oy hướng sang phải, Oz hướng thẳng lên trên)
+        const arrowHeadGeom = new THREE.ConeGeometry(0.11, 0.34, 20);
+        const arrowHeadMat = new THREE.MeshBasicMaterial({ color: colorHex });
+        const arrowHeadMesh = new THREE.Mesh(arrowHeadGeom, arrowHeadMat);
+        arrowHeadMesh.position.copy(dir).multiplyScalar(axisLength);
+        arrowHeadMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+        axesGroup.add(arrowHeadMesh);
+
+        // Vẽ các điểm chia đơn vị 1, 2, 3, 4 trên từng trục để học sinh nhìn thấy ngay độ dài
+        const tickGeom = new THREE.SphereGeometry(0.055, 12, 12);
+        const tickMat = new THREE.MeshBasicMaterial({ color: colorHex });
+        for (let unit = 1; unit <= 4; unit++) {
+          const tickMesh = new THREE.Mesh(tickGeom, tickMat);
+          tickMesh.position.copy(dir).multiplyScalar(unit);
+          axesGroup.add(tickMesh);
+        }
+
+        const labelPos = dir.clone().multiplyScalar(axisLength + 0.42);
+        const labelSprite = createTextSprite(labelText, {
+          fontSize: 38,
+          textColor: `#${colorHex.toString(16).padStart(6, '0')}`,
+          scaleFactor: 0.011
+        });
+        labelSprite.position.copy(labelPos);
+        axesGroup.add(labelSprite);
+      }
+
+      createAxis([1, 0, 0], [-1, 0, 0], 0xDC2626, "x");
+      createAxis([0, 1, 0], [0, -1, 0], 0x16A34A, "y");
+      createAxis([0, 0, 1], [0, 0, -1], 0x2563EB, "z");
+
+      const originSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(0.11, 20, 20),
+        new THREE.MeshBasicMaterial({ color: 0x0F172A })
+      );
+      axesGroup.add(originSphere);
+
+      const labelO = createTextSprite("O", { fontSize: 34, textColor: "#0F172A", scaleFactor: 0.011 });
+      labelO.position.set(-0.28, -0.28, -0.28);
+      axesGroup.add(labelO);
+    }
+
+    buildCoordinateSystem();
+
+    // =========================================================================
+    // 3. VẼ VECTƠ 3D DÀY DẶN & KÝ HIỆU TOÁN HỌC CHUẨN (CHỈ CHỮ a, b CÓ MŨI TÊN)
+    // =========================================================================
+    function createThickVector(endMath, colorHex, vecSymbol, pointLabel, offsetSide = 1, otherDirThree = null) {
+      const start = new THREE.Vector3(0, 0, 0);
+      const end = mathToThree(...endMath);
+      const dir = end.clone().sub(start);
+      const len = dir.length();
+      if (len < 0.001) return;
+
+      const uDir = dir.clone().normalize();
+      const group = new THREE.Group();
+      const headLength = Math.min(0.42, len * 0.25);
+      const shaftLength = len - headLength;
+
+      const shaftGeom = new THREE.CylinderGeometry(0.05, 0.05, shaftLength, 20);
+      shaftGeom.translate(0, shaftLength / 2, 0);
+      const mat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3, metalness: 0.1 });
+      const shaftMesh = new THREE.Mesh(shaftGeom, mat);
+
+      const headGeom = new THREE.ConeGeometry(0.15, headLength, 24);
+      headGeom.translate(0, shaftLength + headLength / 2, 0);
+      const headMesh = new THREE.Mesh(headGeom, mat);
+
+      const vecObj = new THREE.Group();
+      vecObj.add(shaftMesh);
+      vecObj.add(headMesh);
+
+      const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), uDir);
+      vecObj.quaternion.copy(quaternion);
+      group.add(vecObj);
+
+      // Đường gióng nét đứt từ điểm ngọn xuống mặt phẳng Oxy và các trục
+      const projOxy = mathToThree(endMath[0], endMath[1], 0);
+      const projX = mathToThree(endMath[0], 0, 0);
+      const projY = mathToThree(0, endMath[1], 0);
+
+      const dashMat = new THREE.LineDashedMaterial({
+        color: colorHex,
+        dashSize: 0.15,
+        gapSize: 0.1,
+        transparent: true,
+        opacity: 0.45
+      });
+
+      const dashPoints = [end, projOxy, projX, projOxy, projY];
+      const dashGeom = new THREE.BufferGeometry().setFromPoints(dashPoints);
+      const dashLine = new THREE.Line(dashGeom, dashMat);
+      dashLine.computeLineDistances();
+      group.add(dashLine);
+
+      // Tính hướng đẩy nhãn ra phía ngoài góc giữa hai vectơ để không bao giờ đè lên cung góc φ
+      let outwardDir = new THREE.Vector3(-uDir.z, 0.25 * offsetSide, uDir.x);
+      if (otherDirThree && otherDirThree.length() > 0.001) {
+        const uOther = otherDirThree.clone().normalize();
+        const awayFromOther = uDir.clone().sub(uOther.clone().multiplyScalar(uDir.dot(uOther)));
+        if (awayFromOther.length() > 0.05) {
+          outwardDir = awayFromOther.normalize();
+        }
+      }
+      if (outwardDir.length() < 0.01) {
+        outwardDir.set(0, offsetSide, 0);
+      }
+      outwardDir.normalize();
+
+      // Nhãn tọa độ nhỏ gọn tại điểm ngọn, đẩy vượt ra ngoài đầu mũi tên
+      const hexStr = `#${colorHex.toString(16).padStart(6, '0')}`;
+      const coordText = `${pointLabel}(${formatNum(endMath[0])}; ${formatNum(endMath[1])}; ${formatNum(endMath[2])})`;
+      const tipSprite = createTextSprite(coordText, {
+        fontSize: 22,
+        fontFamily: "'JetBrains Mono', monospace",
+        textColor: hexStr,
+        bgColor: "rgba(255, 255, 255, 0.92)",
+        borderColor: hexStr,
+        padding: 7,
+        scaleFactor: 0.0092
+      });
+      tipSprite.position.copy(end)
+        .add(uDir.clone().multiplyScalar(0.55))
+        .add(outwardDir.clone().multiplyScalar(0.28));
+      tipSprite.position.y += 0.16 * offsetSide;
+      group.add(tipSprite);
+
+      // Nhãn ký hiệu vectơ (chỉ chữ a hoặc b có mũi tên), đặt ở khoảng 68% chiều dài (ngoài cung góc φ) và lệch hẳn ra ngoài
+      const midSprite = createTextSprite(vecSymbol, {
+        fontSize: 30,
+        textColor: hexStr,
+        bgColor: "rgba(255, 255, 255, 0.95)",
+        borderColor: hexStr,
+        padding: 7,
+        scaleFactor: 0.0098,
+        isVectorSymbol: true
+      });
+      const labelDist = Math.max(1.25, len * 0.66);
+      midSprite.position.copy(uDir).multiplyScalar(labelDist)
+        .add(outwardDir.clone().multiplyScalar(0.46));
+      midSprite.position.y += 0.14 * offsetSide;
+      group.add(midSprite);
+
+      dynamicGroup.add(group);
+    }
+
+    function drawAngleIndicator(vecAMath, vecBMath, angleDeg) {
+      const vA = mathToThree(...vecAMath);
+      const vB = mathToThree(...vecBMath);
+      const lenA = vA.length();
+      const lenB = vB.length();
+      if (lenA < 0.001 || lenB < 0.001) return;
+
+      const uA = vA.clone().normalize();
+      const uB = vB.clone().normalize();
+      const radius = Math.min(0.95, lenA * 0.42, lenB * 0.42);
+
+      const greenColor = 0x16A34A;
+
+      if (Math.abs(angleDeg - 90) < 0.05) {
+        const sqSize = radius * 0.72;
+        const p1 = uA.clone().multiplyScalar(sqSize);
+        const p2 = uA.clone().multiplyScalar(sqSize).add(uB.clone().multiplyScalar(sqSize));
+        const p3 = uB.clone().multiplyScalar(sqSize);
+
+        const sqGeom = new THREE.BufferGeometry().setFromPoints([p1, p2, p3]);
+        const sqMat = new THREE.LineBasicMaterial({ color: greenColor, linewidth: 3 });
+        dynamicGroup.add(new THREE.Line(sqGeom, sqMat));
+
+        const fillGeom = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(0, 0, 0), p1, p2,
+          new THREE.Vector3(0, 0, 0), p2, p3
+        ]);
+        const fillMat = new THREE.MeshBasicMaterial({
+          color: greenColor,
+          transparent: true,
+          opacity: 0.2,
+          side: THREE.DoubleSide
+        });
+        dynamicGroup.add(new THREE.Mesh(fillGeom, fillMat));
+
+        const label90 = createTextSprite("φ = 90°", {
+          fontSize: 22,
+          fontFamily: "'JetBrains Mono', monospace",
+          textColor: "#15803D",
+          bgColor: "rgba(236, 253, 245, 0.94)",
+          borderColor: "#16A34A",
+          padding: 6,
+          scaleFactor: 0.0092
+        });
+        label90.position.copy(p2).multiplyScalar(1.35);
+        dynamicGroup.add(label90);
+        return;
+      }
+
+      const rad = THREE.MathUtils.degToRad(angleDeg);
+      let normal = new THREE.Vector3().crossVectors(uA, uB);
+      if (normal.length() < 0.001) {
+        normal = Math.abs(uA.y) < 0.9
+          ? new THREE.Vector3(0, 1, 0).cross(uA).normalize()
+          : new THREE.Vector3(1, 0, 0).cross(uA).normalize();
+      } else {
+        normal.normalize();
+      }
+
+      const segments = 40;
+      const arcPoints = [];
+      const fanPoints = [];
+
+      for (let i = 0; i <= segments; i++) {
+        const theta = (rad * i) / segments;
+        const pt = uA.clone().applyAxisAngle(normal, theta).multiplyScalar(radius);
+        arcPoints.push(pt);
+        if (i < segments) {
+          const nextTheta = (rad * (i + 1)) / segments;
+          const nextPt = uA.clone().applyAxisAngle(normal, nextTheta).multiplyScalar(radius);
+          fanPoints.push(new THREE.Vector3(0, 0, 0), pt, nextPt);
+        }
+      }
+
+      const arcGeom = new THREE.BufferGeometry().setFromPoints(arcPoints);
+      const arcMat = new THREE.LineBasicMaterial({ color: greenColor, linewidth: 3 });
+      dynamicGroup.add(new THREE.Line(arcGeom, arcMat));
+
+      const fanGeom = new THREE.BufferGeometry().setFromPoints(fanPoints);
+      const fanMat = new THREE.MeshBasicMaterial({
+        color: greenColor,
+        transparent: true,
+        opacity: 0.2,
+        side: THREE.DoubleSide
+      });
+      dynamicGroup.add(new THREE.Mesh(fanGeom, fanMat));
+
+      const midPt = uA.clone().applyAxisAngle(normal, rad / 2).multiplyScalar(radius + 0.34);
+      const angleLabel = createTextSprite(`φ = ${formatNum(angleDeg)}°`, {
+        fontSize: 22,
+        fontFamily: "'JetBrains Mono', monospace",
+        textColor: "#15803D",
+        bgColor: "rgba(236, 253, 245, 0.94)",
+        borderColor: "#16A34A",
+        padding: 6,
+        scaleFactor: 0.0092
+      });
+      angleLabel.position.copy(midPt);
+      dynamicGroup.add(angleLabel);
+    }
+
+    // =========================================================================
+    // 4. TÍNH TOÁN & CẬP NHẬT GIAO DIỆN + CẢNH 3D
+    // =========================================================================
+    function formatNum(val) {
+      const rounded = Math.round(val * 100) / 100;
+      return rounded.toString().replace('.', ',');
+    }
+
+    function updateSceneAndUI(vecA, vecB, groupId = 0) {
+      currentVecA = vecA;
+      currentVecB = vecB;
+      currentGroupId = groupId;
+
+      while (dynamicGroup.children.length > 0) {
+        dynamicGroup.remove(dynamicGroup.children[0]);
+      }
+
+      const [ax, ay, az] = vecA;
+      const [bx, by, bz] = vecB;
+
+      const lenA = Math.hypot(ax, ay, az);
+      const lenB = Math.hypot(bx, by, bz);
+      const dot = ax * bx + ay * by + az * bz;
+
+      let cosVal = 0;
+      let angleDeg = 0;
+      if (lenA > 0 && lenB > 0) {
+        cosVal = Math.max(-1, Math.min(1, dot / (lenA * lenB)));
+        angleDeg = THREE.MathUtils.radToDeg(Math.acos(cosVal));
+      }
+
+      // Vẽ lại 3D với nhãn thanh thoát, đẩy lệch hẳn ra hai phía ngoài cung góc φ
+      const threeA = mathToThree(...vecA);
+      const threeB = mathToThree(...vecB);
+      createThickVector(vecA, 0x0284C7, "a", "A", 1, threeB);
+      createThickVector(vecB, 0xEA580C, "b", "B", -1, threeA);
+      if (lenA > 0 && lenB > 0) {
+        drawAngleIndicator(vecA, vecB, angleDeg);
+      }
+
+      document.getElementById('disp-vec-a').textContent = `(${formatNum(ax)}; ${formatNum(ay)}; ${formatNum(az)})`;
+      document.getElementById('disp-vec-b').textContent = `(${formatNum(bx)}; ${formatNum(by)}; ${formatNum(bz)})`;
+
+      if (groupId > 0 && GROUP_PRESETS[groupId]) {
+        const preset = GROUP_PRESETS[groupId];
+        document.getElementById('current-mode-badge').textContent = preset.name;
+        document.getElementById('disp-len-a').textContent = preset.lenAText;
+        document.getElementById('disp-len-b').textContent = preset.lenBText;
+        document.getElementById('disp-angle').textContent = preset.angleText;
+        document.getElementById('disp-cos').textContent = preset.cosText;
+        document.getElementById('disp-dot-value').textContent = preset.dotText;
+      } else {
+        document.getElementById('current-mode-badge').textContent = "Tự nhập";
+        document.getElementById('disp-len-a').textContent = lenA === 0 ? "0" : formatNum(lenA);
+        document.getElementById('disp-len-b').textContent = lenB === 0 ? "0" : formatNum(lenB);
+        document.getElementById('disp-angle').textContent = (lenA === 0 || lenB === 0) ? "Không XĐ" : `${formatNum(angleDeg)}°`;
+        document.getElementById('disp-cos').textContent = (lenA === 0 || lenB === 0) ? "—" : formatNum(cosVal);
+        document.getElementById('disp-dot-value').textContent = formatNum(dot);
+      }
+
+      const termX = `${formatNum(ax)}·${bx < 0 ? `(${formatNum(bx)})` : formatNum(bx)}`;
+      const termY = `${formatNum(ay)}·${by < 0 ? `(${formatNum(by)})` : formatNum(by)}`;
+      const termZ = `${formatNum(az)}·${bz < 0 ? `(${formatNum(bz)})` : formatNum(bz)}`;
+      document.getElementById('disp-coord-expansion').textContent =
+        `xx' + yy' + zz' = ${termX} + ${termY} + ${termZ} = ${formatNum(dot)}`;
+    }
+
+    function selectGroup(id) {
+      document.getElementById('custom-inputs-box').classList.add('hidden');
+      document.getElementById('btn-custom-mode').classList.remove('border-sky-600', 'bg-sky-50', 'text-sky-700');
+
+      for (let i = 1; i <= 4; i++) {
+        const btn = document.getElementById(`btn-group-${i}`);
+        if (i === id) {
+          btn.className = "group-btn px-3 py-2.5 rounded-xl border-2 border-sky-600 bg-sky-50 text-sky-800 font-bold text-sm text-left transition flex items-center justify-between";
+        } else {
+          btn.className = "group-btn px-3 py-2.5 rounded-xl border-2 border-slate-200 bg-white hover:border-sky-300 text-slate-700 font-bold text-sm text-left transition flex items-center justify-between";
+        }
+      }
+
+      const preset = GROUP_PRESETS[id];
+      updateSceneAndUI(preset.a, preset.b, id);
+    }
+
+    function enableCustomMode() {
+      for (let i = 1; i <= 4; i++) {
+        const btn = document.getElementById(`btn-group-${i}`);
+        btn.className = "group-btn px-3 py-2.5 rounded-xl border-2 border-slate-200 bg-white hover:border-sky-300 text-slate-700 font-bold text-sm text-left transition flex items-center justify-between";
+      }
+      document.getElementById('btn-custom-mode').classList.add('border-sky-600', 'bg-sky-50', 'text-sky-700');
+      document.getElementById('custom-inputs-box').classList.remove('hidden');
+
+      document.getElementById('in-ax').value = currentVecA[0];
+      document.getElementById('in-ay').value = currentVecA[1];
+      document.getElementById('in-az').value = currentVecA[2];
+      document.getElementById('in-bx').value = currentVecB[0];
+      document.getElementById('in-by').value = currentVecB[1];
+      document.getElementById('in-bz').value = currentVecB[2];
+
+      applyCustomVectors();
+    }
+
+    function applyCustomVectors() {
+      const ax = parseFloat(document.getElementById('in-ax').value) || 0;
+      const ay = parseFloat(document.getElementById('in-ay').value) || 0;
+      const az = parseFloat(document.getElementById('in-az').value) || 0;
+      const bx = parseFloat(document.getElementById('in-bx').value) || 0;
+      const by = parseFloat(document.getElementById('in-by').value) || 0;
+      const bz = parseFloat(document.getElementById('in-bz').value) || 0;
+
+      updateSceneAndUI([ax, ay, az], [bx, by, bz], 0);
+    }
+
+    function toggleDotProductDisplay() {
+      const isChecked = document.getElementById('toggle-dot-result').checked;
+      const box = document.getElementById('dot-result-box');
+      if (isChecked) {
+        box.classList.remove('hidden');
+      } else {
+        box.classList.add('hidden');
+      }
+    }
+
+    function recordCurrentToTable() {
+      const dot = currentVecA[0] * currentVecB[0] + currentVecA[1] * currentVecB[1] + currentVecA[2] * currentVecB[2];
+      const dotStr = formatNum(dot);
+
+      if (currentGroupId >= 1 && currentGroupId <= 4) {
+        const row = document.getElementById(`row-group-${currentGroupId}`);
+        const cell = document.getElementById(`cell-val-${currentGroupId}`);
+        row.classList.remove('text-slate-400');
+        row.classList.add('bg-sky-50/70', 'text-slate-900');
+        cell.dataset.actualVal = dotStr;
+        cell.textContent = isTableColHidden ? "•••" : dotStr;
+        cell.classList.add('text-sky-700', 'text-sm');
+        showToast(`Đã ghi kết quả Nhóm ${currentGroupId}: a · b = ${dotStr}`);
+      } else {
+        const tbody = document.getElementById('summary-table-body');
+        const tr = document.createElement('tr');
+        tr.className = "bg-amber-50/70 text-slate-900 custom-summary-row";
+        tr.innerHTML = `
+          <td class="py-2 px-2 font-sans font-bold text-amber-700">Mở rộng</td>
+          <td class="py-2 px-2">(${formatNum(currentVecA[0])}; ${formatNum(currentVecA[1])}; ${formatNum(currentVecA[2])})</td>
+          <td class="py-2 px-2">(${formatNum(currentVecB[0])}; ${formatNum(currentVecB[1])}; ${formatNum(currentVecB[2])})</td>
+          <td class="py-2 px-2 text-right font-bold text-amber-700 text-sm dot-col-cell" data-actual-val="${dotStr}">${isTableColHidden ? "•••" : dotStr}</td>
+        `;
+        tbody.appendChild(tr);
+        showToast(`Đã thêm mẫu thử mở rộng: a · b = ${dotStr}`);
+      }
+    }
+
+    function toggleTableColumn() {
+      isTableColHidden = !isTableColHidden;
+      const icon = document.getElementById('icon-toggle-col');
+      const txt = document.getElementById('text-toggle-col');
+      const cells = document.querySelectorAll('.dot-col-cell');
+
+      if (isTableColHidden) {
+        icon.className = "fa-solid fa-eye-slash";
+        txt.textContent = "Hiện kq";
+        cells.forEach(c => {
+          if (c.dataset.actualVal) c.textContent = "•••";
+        });
+      } else {
+        icon.className = "fa-solid fa-eye";
+        txt.textContent = "Ẩn kq";
+        cells.forEach(c => {
+          if (c.dataset.actualVal) c.textContent = c.dataset.actualVal;
+        });
+      }
+    }
+
+    function toggleRuleBox() {
+      const box = document.getElementById('rule-discovery-box');
+      box.classList.toggle('hidden');
+    }
+
+    function resetSummaryTable() {
+      for (let i = 1; i <= 4; i++) {
+        const row = document.getElementById(`row-group-${i}`);
+        const cell = document.getElementById(`cell-val-${i}`);
+        row.className = "text-slate-400";
+        delete cell.dataset.actualVal;
+        cell.textContent = "?";
+        cell.className = "py-2 px-2 text-right font-bold dot-col-cell";
+      }
+      document.querySelectorAll('.custom-summary-row').forEach(el => el.remove());
+      document.getElementById('rule-discovery-box').classList.add('hidden');
+      showToast("Đã đặt lại bảng tổng hợp!");
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast-msg');
+      toast.textContent = msg;
+      toast.classList.remove('opacity-0');
+      setTimeout(() => {
+        toast.classList.add('opacity-0');
+      }, 2200);
+    }
+
+    // =========================================================================
+    // 5. ĐIỀU KHIỂN CAMERA, THU GỌN & KÉO THAY ĐỔI KÍCH THƯỚC BẢNG ĐIỀU KHIỂN
+    // =========================================================================
+    function updateCanvasSize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    // Tính năng kéo thanh cạnh trái để thay đổi độ rộng bảng điều khiển
+    const panelEl = document.getElementById('control-panel');
+    const resizerEl = document.getElementById('panel-resizer');
+    let isResizingPanel = false;
+
+    resizerEl.addEventListener('mousedown', (e) => {
+      isResizingPanel = true;
+      resizerEl.classList.add('resizing');
+      document.body.style.cursor = 'ew-resize';
+      e.preventDefault();
+    });
+
+    resizerEl.addEventListener('touchstart', (e) => {
+      isResizingPanel = true;
+      resizerEl.classList.add('resizing');
+      e.preventDefault();
+    }, { passive: false });
+
+    function handlePanelResizeMove(clientX) {
+      if (!isResizingPanel) return;
+      const rightMargin = 16; // right-4 = 16px
+      const newWidth = window.innerWidth - clientX - rightMargin;
+      const minW = 300;
+      const maxW = Math.min(680, window.innerWidth - 32);
+      const clampedW = Math.max(minW, Math.min(maxW, newWidth));
+      panelEl.style.width = `${clampedW}px`;
+      updateCanvasSize();
+    }
+
+    window.addEventListener('mousemove', (e) => handlePanelResizeMove(e.clientX));
+    window.addEventListener('touchmove', (e) => {
+      if (isResizingPanel && e.touches.length > 0) {
+        handlePanelResizeMove(e.touches[0].clientX);
+      }
+    }, { passive: true });
+
+    function stopPanelResize() {
+      if (!isResizingPanel) return;
+      isResizingPanel = false;
+      resizerEl.classList.remove('resizing');
+      document.body.style.cursor = '';
+      updateCanvasSize();
+    }
+
+    window.addEventListener('mouseup', stopPanelResize);
+    window.addEventListener('touchend', stopPanelResize);
+
+    function setCameraPreset(preset) {
+      controls.autoRotate = false;
+      document.getElementById('autorotate-text').textContent = "Tự xoay: Tắt";
+
+      if (preset === 'default') {
+        camera.position.set(7.5, 5.8, 8.2);
+        controls.target.set(0, 0.5, 0);
+      } else if (preset === 'oxy') {
+        camera.position.set(0.01, 11.5, 0.01);
+        controls.target.set(0, 0, 0);
+      } else if (preset === 'oxz') {
+        camera.position.set(11.5, 1.5, 0);
+        controls.target.set(0, 0.5, 0);
+      }
+      controls.update();
+    }
+
+    function toggleAutoRotate() {
+      controls.autoRotate = !controls.autoRotate;
+      controls.autoRotateSpeed = 1.6;
+      const btn = document.getElementById('btn-autorotate');
+      const txt = document.getElementById('autorotate-text');
+      if (controls.autoRotate) {
+        txt.textContent = "Tự xoay: Bật";
+        btn.classList.add('bg-amber-100', 'text-amber-800');
+      } else {
+        txt.textContent = "Tự xoay: Tắt";
+        btn.classList.remove('bg-amber-100', 'text-amber-800');
+      }
+    }
+
+    function togglePanel(show) {
+      const panel = document.getElementById('control-panel');
+      const openBtn = document.getElementById('btn-open-panel');
+      if (show) {
+        panel.classList.remove('hidden');
+        openBtn.classList.add('hidden');
+        openBtn.classList.remove('flex');
+      } else {
+        panel.classList.add('hidden');
+        openBtn.classList.remove('hidden');
+        openBtn.classList.add('flex');
+      }
+      updateCanvasSize();
+    }
+
+    window.addEventListener('resize', updateCanvasSize);
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    window.onload = function () {
+      selectGroup(1);
+      animate();
+    };
+  </script>
+</body>
+</html>
