@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Dot Product Quiz (Oxyz) • Live Classroom Challenge</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@500;700;800&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- MathJax để hiển thị công thức toán học sắc nét trên cả điện thoại và màn chiếu -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+    body {
+      font-family: 'Be Vietnam Pro', sans-serif;
+      background-color: #F8FAFC;
+      color: #0F172A;
+    }
+    .math-font {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .option-card {
+      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .option-card:active {
+      transform: scale(0.98);
+    }
+    @keyframes pulse-border {
+      0%, 100% { border-color: #0284C7; }
+      50% { border-color: #38BDF8; }
+    }
+    .active-card {
+      animation: pulse-border 2s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="bg-slate-900 text-white px-4 py-3 shadow-md sticky top-0 z-30">
+    <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5">
+        <span class="w-9 h-9 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-lg">
+          <i class="fa-solid fa-bolt"></i>
+        </span>
+        <div>
+          <h1 class="font-extrabold text-sm sm:text-base leading-tight">3D Dot Product Live Challenge</h1>
+          <div class="flex items-center gap-2">
+            <p class="text-[11px] text-slate-400">Grade 12 Math • Class 12A1 • English CLIL Quiz</p>
+            <span id="cloud-status-badge" class="text-[10px] font-bold px-2 py-0.2 rounded-full bg-amber-500/20 text-amber-300">
+              <i class="fa-solid fa-spinner fa-spin mr-1"></i>Connecting Cloud...
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chuyển nhanh giữa chế độ Học sinh làm bài và Bảng điều khiển Giáo viên -->
+      <div class="flex items-center gap-2">
+        <button onclick="switchView('student')" id="nav-student" class="px-3 py-1.5 rounded-xl bg-sky-600 text-white text-xs font-bold shadow-sm transition flex items-center gap-1.5">
+          <i class="fa-solid fa-mobile-screen-button"></i>
+          <span>Student Quiz</span>
+        </button>
+        <button onclick="switchView('teacher')" id="nav-teacher" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5 relative">
+          <i class="fa-solid fa-trophy text-amber-400"></i>
+          <span>Teacher &amp; Ranking</span>
+          <span id="live-count-badge" class="ml-1 px-1.5 py-0.2 rounded-full bg-emerald-500 text-white text-[10px] font-extrabold">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======================================================================= -->
+  <!-- VIEW 1: STUDENT INTERFACE (GIAO DIỆN ĐIỆN THOẠI HỌC SINH)              -->
+  <!-- ======================================================================= -->
+  <main id="view-student" class="flex-1 max-w-2xl w-full mx-auto p-4 flex flex-col justify-center">
+
+    <!-- MÀN HÌNH 1A: ĐĂNG NHẬP TÊN & NHÓM -->
+    <div id="student-login-box" class="bg-white rounded-3xl border border-slate-200 shadow-xl p-6 sm:p-8 space-y-6">
+      <div class="text-center space-y-2">
+        <span class="inline-block px-3 py-1 rounded-full bg-sky-100 text-sky-700 text-xs font-extrabold uppercase tracking-wider">
+          10 Questions • Speed &amp; Accuracy
+        </span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900">Join the 3D Vector Quiz!</h2>
+        <p class="text-sm text-slate-600">
+          Enter your full name and team. Both <b>correct answers</b> and <b>completion time</b> determine your final rank!
+        </p>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Student Full Name (Họ và tên)</label>
+          <input type="text" id="input-student-name" placeholder="e.g., Nguyen Minh Anh" class="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 focus:border-sky-600 focus:outline-none font-bold text-slate-900 text-base" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Select Your Team (Chọn Nhóm)</label>
+          <div class="grid grid-cols-4 gap-2">
+            <button type="button" onclick="selectStudentGroup(1)" id="grp-pill-1" class="grp-pill py-2.5 rounded-xl border-2 border-sky-600 bg-sky-50 text-sky-800 font-extrabold text-sm transition">Group 1</button>
+            <button type="button" onclick="selectStudentGroup(2)" id="grp-pill-2" class="grp-pill py-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 font-extrabold text-sm transition">Group 2</button>
+            <button type="button" onclick="selectStudentGroup(3)" id="grp-pill-3" class="grp-pill py-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 font-extrabold text-sm transition">Group 3</button>
+            <button type="button" onclick="selectStudentGroup(4)" id="grp-pill-4" class="grp-pill py-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 font-extrabold text-sm transition">Group 4</button>
+          </div>
+        </div>
+
+        <p id="login-error" class="hidden text-xs font-bold text-rose-600 bg-rose-50 px-3 py-2 rounded-xl border border-rose-200">
+          <i class="fa-solid fa-circle-exclamation mr-1"></i>Please enter your name before starting!
+        </p>
+
+        <button onclick="startQuiz()" class="w-full py-4 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-base sm:text-lg shadow-lg shadow-sky-600/25 transition flex items-center justify-center gap-2">
+          <span>Start 10-Question Challenge</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- MÀN HÌNH 1B: ĐANG LÀM BÀI TRẮC NGHIỆM -->
+    <div id="student-quiz-box" class="hidden bg-white rounded-3xl border border-slate-200 shadow-xl p-5 sm:p-7 space-y-5">
+      <!-- Thanh tiến độ & Đồng hồ đo tốc độ -->
+      <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+        <div>
+          <span id="q-category-badge" class="text-[11px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-indigo-100 text-indigo-700">
+            Theory • Formula Recognition
+          </span>
+          <div class="text-sm font-extrabold text-slate-800 mt-1">
+            Question <span id="q-current-num" class="text-sky-600">1</span> / 10
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 bg-slate-900 text-white px-3.5 py-2 rounded-2xl">
+          <i class="fa-solid fa-stopwatch text-amber-400"></i>
+          <span id="live-timer-display" class="math-font font-extrabold text-base">00.0s</span>
+        </div>
+      </div>
+
+      <!-- Thanh progress bar -->
+      <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div id="quiz-progress-bar" class="h-full bg-sky-600 transition-all duration-300" style="width: 10%;"></div>
+      </div>
+
+      <!-- Nội dung câu hỏi tiếng Anh -->
+      <div class="py-1">
+        <h3 id="question-text" class="text-base sm:text-lg font-bold text-slate-900 leading-relaxed">
+          Loading question...
+        </h3>
+      </div>
+
+      <!-- 4 phương án A, B, C, D -->
+      <div id="options-container" class="space-y-2.5">
+        <!-- Render động bằng JS -->
+      </div>
+
+      <!-- Phản hồi nhanh sau khi chọn -->
+      <div id="instant-feedback" class="hidden p-3.5 rounded-2xl text-xs sm:text-sm font-semibold leading-relaxed"></div>
+
+      <!-- Nút tiếp theo -->
+      <div class="pt-1 flex justify-end">
+        <button id="btn-next-question" onclick="nextQuestion()" disabled class="px-6 py-3 rounded-2xl bg-slate-200 text-slate-400 font-extrabold text-sm transition flex items-center gap-2 cursor-not-allowed">
+          <span id="btn-next-label">Next Question</span>
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- MÀN HÌNH 1C: HOÀN THÀNH & BẢNG ĐIỂM CÁ NHÂN -->
+    <div id="student-result-box" class="hidden bg-white rounded-3xl border border-slate-200 shadow-xl p-6 sm:p-8 text-center space-y-5">
+      <div class="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center text-3xl">
+        <i class="fa-solid fa-medal"></i>
+      </div>
+      <div>
+        <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-700">Submission Complete!</span>
+        <h2 id="res-student-name" class="text-2xl font-extrabold text-slate-900 mt-1">Student Name</h2>
+        <p id="res-student-group" class="text-xs font-bold text-slate-500">Group 1 • Class 12A1</p>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+        <div>
+          <span class="text-[11px] font-bold text-slate-500 uppercase block">Score</span>
+          <span id="res-score" class="math-font text-2xl font-extrabold text-sky-600">10/10</span>
+        </div>
+        <div class="border-x border-slate-200">
+          <span class="text-[11px] font-bold text-slate-500 uppercase block">Total Time</span>
+          <span id="res-time" class="math-font text-2xl font-extrabold text-amber-600">42.5s</span>
+        </div>
+        <div>
+          <span class="text-[11px] font-bold text-slate-500 uppercase block">Avg Speed</span>
+          <span id="res-speed" class="math-font text-2xl font-extrabold text-emerald-600">4.3s/q</span>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-600">
+        Your result has been recorded on the live leaderboard. Check the main screen to see the fastest top scorers!
+      </p>
+
+      <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+        <button onclick="switchView('teacher')" class="px-5 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition flex items-center gap-2">
+          <i class="fa-solid fa-trophy text-amber-400"></i>
+          <span>View Live Leaderboard</span>
+        </button>
+        <button onclick="resetForNextStudent()" class="px-5 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition">
+          Next Student Attempt
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ======================================================================= -->
+  <!-- VIEW 2: TEACHER DASHBOARD & LIVE LEADERBOARD (MÀN CHIẾU GIÁO VIÊN)       -->
+  <!-- ======================================================================= -->
+  <section id="view-teacher" class="hidden flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 space-y-5">
+
+    <!-- Thanh công cụ trên cùng của Giáo viên -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+          <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-700">Live Classroom Analytics &amp; Ranking</span>
+        </div>
+        <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 mt-0.5">
+          Leaderboard: Accuracy + Speed Ranking
+        </h2>
+        <p class="text-xs text-slate-500">
+          Ranked automatically by <b>Highest Score (10 pts)</b> first, then <b>Fastest Completion Time (seconds)</b>.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="toggleCloudModal()" class="px-3.5 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 font-bold text-xs sm:text-sm transition flex items-center gap-2" title="Connect GitHub Pages to Firebase Cloud for 51-device real-time sync">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <span>Cloud Setup (GitHub)</span>
+        </button>
+        <button onclick="toggleQrModal()" class="px-3.5 py-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 font-bold text-xs sm:text-sm transition flex items-center gap-2">
+          <i class="fa-solid fa-qrcode"></i>
+          <span>Show QR Join Code</span>
+        </button>
+        <button onclick="simulateClassroomData()" class="px-3.5 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold text-xs sm:text-sm transition flex items-center gap-2" title="Load sample responses for demonstration preview">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span>Demo Class Data</span>
+        </button>
+        <button onclick="exportResultsCSV()" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm shadow-sm transition flex items-center gap-2">
+          <i class="fa-solid fa-file-excel"></i>
+          <span>Export Results (.CSV)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 4 Thẻ thống kê nhanh -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+        <span class="text-xs font-bold text-slate-500 uppercase">Submissions (Số lượng)</span>
+        <div class="flex items-baseline justify-between mt-1">
+          <span id="stat-total-students" class="math-font text-2xl sm:text-3xl font-extrabold text-slate-900">0</span>
+          <span class="text-xs font-bold text-sky-600">/ 51 Students</span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+        <span class="text-xs font-bold text-slate-500 uppercase">Class Average Score</span>
+        <div class="flex items-baseline justify-between mt-1">
+          <span id="stat-avg-score" class="math-font text-2xl sm:text-3xl font-extrabold text-sky-600">0.0</span>
+          <span class="text-xs font-bold text-slate-400">/ 10 pts</span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+        <span class="text-xs font-bold text-slate-500 uppercase">Average Speed (Tốc độ TB)</span>
+        <div class="flex items-baseline justify-between mt-1">
+          <span id="stat-avg-time" class="math-font text-2xl sm:text-3xl font-extrabold text-amber-600">0.0s</span>
+          <span class="text-xs font-bold text-slate-400">total time</span>
+        </div>
+      </div>
+
+      <div class="bg-amber-50/70 rounded-2xl border border-amber-200 p-4 shadow-sm">
+        <span class="text-xs font-bold text-amber-800 uppercase"><i class="fa-solid fa-crown mr-1"></i>Fastest Top Scorer</span>
+        <div class="mt-1.5">
+          <span id="stat-top-champion" class="text-sm sm:text-base font-extrabold text-slate-900 line-clamp-1">Waiting...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bảng xếp hạng trực tiếp -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between">
+        <h3 class="font-bold text-sm sm:text-base flex items-center gap-2">
+          <i class="fa-solid fa-ranking-star text-amber-400"></i>
+          <span>Live Student Leaderboard (Bảng xếp hạng tốc độ &amp; điểm số)</span>
+        </h3>
+        <button onclick="clearAllLeaderboard()" class="text-xs font-semibold text-slate-300 hover:text-rose-400 transition">
+          <i class="fa-solid fa-trash-can mr-1"></i>Clear All
+        </button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+              <th class="py-3 px-4 w-16">Rank</th>
+              <th class="py-3 px-4">Student Name</th>
+              <th class="py-3 px-4">Team</th>
+              <th class="py-3 px-4 text-center">Correct</th>
+              <th class="py-3 px-4 text-center">Score</th>
+              <th class="py-3 px-4 text-right">Total Time</th>
+              <th class="py-3 px-4 text-right">Speed / Q</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-tbody" class="divide-y divide-slate-100 text-sm">
+            <tr>
+              <td colspan="7" class="py-10 text-center text-slate-400 text-sm">
+                No student submissions yet. Students can scan the QR code or switch to <b>Student Quiz</b> tab to begin!
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Phân tích tỷ lệ đúng từng câu hỏi (Q1 -> Q10) -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="font-extrabold text-sm sm:text-base text-slate-900">
+          <i class="fa-solid fa-chart-column text-sky-600 mr-1.5"></i>Question-by-Question Accuracy (Thống kê từng câu)
+        </h3>
+        <span class="text-xs text-slate-500">Q1–Q5: Theory • Q6–Q10: Calculation</span>
+      </div>
+      <div id="question-analytics-grid" class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+        <!-- Render động bằng JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- MODAL XÁC NHẬN XÓA BẢNG XẾP HẠNG -->
+  <div id="clear-confirm-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl">
+      <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 mx-auto flex items-center justify-center text-xl">
+        <i class="fa-solid fa-trash-can"></i>
+      </div>
+      <h3 class="font-extrabold text-lg text-slate-900">Clear All Results?</h3>
+      <p class="text-xs text-slate-600">This will remove all current student scores from the live leaderboard. Make sure you exported the CSV file first!</p>
+      <div class="flex items-center justify-center gap-2 pt-1">
+        <button onclick="closeClearModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">Cancel</button>
+        <button onclick="confirmClearAllLeaderboard()" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition">Yes, Clear All</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CẤU HÌNH CLOUD SYNC CHO GITHUB PAGES (51 ĐIỆN THOẠI) -->
+  <div id="cloud-setup-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
+            <i class="fa-solid fa-cloud"></i>
+          </span>
+          <div>
+            <h3 class="font-extrabold text-base text-slate-900">GitHub Pages Live Sync Setup</h3>
+            <p class="text-[11px] text-slate-500">Connect 51 student phones to this screen in 3 quick steps</p>
+          </div>
+        </div>
+        <button onclick="toggleCloudModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="bg-slate-50 rounded-2xl p-3.5 border border-slate-200 text-xs text-slate-700 space-y-2 leading-relaxed">
+        <p class="font-extrabold text-slate-900"><i class="fa-solid fa-list-check text-indigo-600 mr-1.5"></i>Hướng dẫn 2 phút (Chỉ cần làm 1 lần trước giờ dạy):</p>
+        <ol class="list-decimal list-inside space-y-1 text-slate-600">
+          <li>Vào <b>console.firebase.google.com</b> $\rightarrow$ Tạo Project miễn phí $\rightarrow$ Bật <b>Authentication</b> (chọn <i>Anonymous</i>) và <b>Firestore Database</b> (chọn <i>Test mode</i>).</li>
+          <li>Vào <b>Project Settings</b> $\rightarrow$ Thêm ứng dụng Web (<code>&lt;/&gt;</code>) $\rightarrow$ Copy đoạn <code>firebaseConfig = { ... }</code> dán vào ô bên dưới.</li>
+          <li>Bấm <b>Save &amp; Generate Live QR</b>: Mã QR sẽ tự động đính kèm chìa khóa kết nối để cả 51 học sinh quét Zalo vào là đổ điểm trực tiếp về màn hình này!</li>
+        </ol>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Paste Firebase Config Object / JSON</label>
+        <textarea id="input-firebase-config" rows="6" placeholder='{
+  "apiKey": "AIzaSy...",
+  "authDomain": "your-project.firebaseapp.com",
+  "projectId": "your-project-id",
+  "storageBucket": "your-project.appspot.com",
+  "messagingSenderId": "123456789",
+  "appId": "1:123456789:web:abc..."
+}' class="w-full p-3 rounded-2xl border-2 border-slate-200 focus:border-indigo-600 focus:outline-none math-font text-xs text-slate-800 bg-slate-50"></textarea>
+        <p id="cloud-config-error" class="hidden mt-1.5 text-xs font-bold text-rose-600">
+          <i class="fa-solid fa-circle-exclamation mr-1"></i>Invalid config format! Please paste the object containing apiKey and projectId.
+        </p>
+      </div>
+
+      <div class="flex items-center justify-between gap-2 pt-1">
+        <button onclick="clearSavedCloudConfig()" class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 font-bold text-xs transition">
+          Reset Config
+        </button>
+        <button onclick="saveCustomCloudConfig()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-md transition flex items-center gap-2">
+          <i class="fa-solid fa-check"></i>
+          <span>Save &amp; Connect Cloud</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL MÃ QR QUÉT VÀO LÀM BÀI -->
+  <div id="qr-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-extrabold uppercase tracking-wider text-sky-700">Scan to Join on Smartphone</span>
+        <button onclick="toggleQrModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div id="qr-local-warning" class="hidden bg-amber-50 border border-amber-300 rounded-2xl p-3 text-left text-xs text-amber-900 space-y-1">
+        <p class="font-extrabold text-amber-800"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Bạn đang mở file trực tiếp từ ổ cứng (file:///)</p>
+        <p>Điện thoại quét Zalo sẽ không mở được file nội bộ. Hãy đưa file này lên <b>GitHub Pages</b>, mở đường link <code>https://...</code> đó lên rồi mới bấm nút này để lấy mã QR chuẩn!</p>
+      </div>
+      <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 inline-block mx-auto">
+        <img id="qr-image" src="" alt="QR Code to Join Quiz" class="w-52 h-52 mx-auto rounded-lg" onerror="this.src='https://placehold.co/220x220/0F172A/FFFFFF?text=Scan+Quiz+Link'" />
+      </div>
+      <div class="space-y-1">
+        <h3 class="font-extrabold text-lg text-slate-900">3D Dot Product English Quiz</h3>
+        <p id="current-url-text" class="text-xs text-slate-500 break-all px-2 line-clamp-2"></p>
+      </div>
+      <button onclick="copyQuizLink()" class="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs transition">
+        <i class="fa-solid fa-copy mr-1.5"></i>Copy Quiz Link (Kèm mã đồng bộ)
+      </button>
+    </div>
+  </div>
+
+  <!-- TOAST THÔNG BÁO -->
+  <div id="toast-banner" class="fixed bottom-4 right-4 z-50 pointer-events-none opacity-0 transition-opacity duration-300 bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg">
+    Copied!
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, doc, addDoc, getDocs, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // =========================================================================
+    // 1. NGÂN HÀNG 10 CÂU HỎI TIẾNG ANH (5 CÂU LÍ THUYẾT + 5 CÂU TÍNH TOÁN)
+    // =========================================================================
+    const QUIZ_QUESTIONS = [
+      {
+        id: 1,
+        type: "Theory • Formula",
+        question: "In 3D space $Oxyz$, given two vectors $\\vec{a}=(x; y; z)$ and $\\vec{b}=(x'; y'; z')$. Which formula correctly defines their dot product $\\vec{a}\\cdot\\vec{b}$?",
+        options: [
+          "$xx' + yy' + zz'$",
+          "$(x + x'; y + y'; z + z')$",
+          "$xx' - yy' + zz'$",
+          "$\\sqrt{xx' + yy' + zz'}$"
+        ],
+        correctIndex: 0,
+        explanation: "The dot product of two vectors is a real number equal to the sum of the products of their corresponding coordinates: $xx' + yy' + zz'$."
+      },
+      {
+        id: 2,
+        type: "Theory • Perpendicularity",
+        question: "In 3D space $Oxyz$, two vectors $\\vec{a}=(x; y; z)$ and $\\vec{b}=(x'; y'; z')$ are perpendicular ($\\vec{a} \\perp \\vec{b}$) if and only if:",
+        options: [
+          "$xx' + yy' + zz' = 1$",
+          "$xx' + yy' + zz' = 0$",
+          "$x + x' + y + y' + z + z' = 0$",
+          "$\\frac{x}{x'} = \\frac{y}{y'} = \\frac{z}{z'}$"
+        ],
+        correctIndex: 1,
+        explanation: "Two vectors are perpendicular if and only if their dot product equals zero: $\\vec{a}\\cdot\\vec{b} = 0 \\Leftrightarrow xx' + yy' + zz' = 0$."
+      },
+      {
+        id: 3,
+        type: "Theory • Angle Cosine",
+        question: "In 3D space $Oxyz$, for two non-zero vectors $\\vec{a}=(x; y; z)$ and $\\vec{b}=(x'; y'; z')$, what is the formula for $\\cos(\\vec{a}, \\vec{b})$?",
+        options: [
+          "$\\frac{xx' + yy' + zz'}{\\sqrt{x^2 + y^2 + z^2} + \\sqrt{x'^2 + y'^2 + z'^2}}$",
+          "$\\frac{xx' + yy' + zz'}{(x^2 + y^2 + z^2)(x'^2 + y'^2 + z'^2)}$",
+          "$\\frac{xx' + yy' + zz'}{\\sqrt{x^2 + y^2 + z^2}\\cdot\\sqrt{x'^2 + y'^2 + z'^2}}$",
+          "$\\frac{\\vert{}xx' + yy' + zz'\\vert{}}{\\sqrt{x^2 + y^2 + z^2}\\cdot\\sqrt{x'^2 + y'^2 + z'^2}}$"
+        ],
+        correctIndex: 2,
+        explanation: "By definition, $\\cos(\\vec{a}, \\vec{b}) = \\frac{\\vec{a}\\cdot\\vec{b}}{\\vert{}\\vec{a}\\vert{}\\cdot\\vert{}\\vec{b}\\vert{}}$ without absolute value bars in the numerator."
+      },
+      {
+        id: 4,
+        type: "Theory • Distance Formula",
+        question: "Given two points $A(x_A; y_A; z_A)$ and $B(x_B; y_B; z_B)$ in $Oxyz$. Which formula calculates the distance $AB$?",
+        options: [
+          "$\\sqrt{(x_B + x_A)^2 + (y_B + y_A)^2 + (z_B + z_A)^2}$",
+          "$(x_B - x_A)^2 + (y_B - y_A)^2 + (z_B - z_A)^2$",
+          "$\\sqrt{(x_B - x_A)^2 + (y_B - y_A)^2 + (z_B - z_A)^2}$",
+          "$\\vert{}x_B - x_A\\vert{} + \\vert{}y_B - y_A\\vert{} + \\vert{}z_B - z_A\\vert{}$"
+        ],
+        correctIndex: 2,
+        explanation: "Since $\\overrightarrow{AB} = (x_B - x_A; y_B - y_A; z_B - z_A)$, its magnitude is $AB = \\sqrt{(x_B - x_A)^2 + (y_B - y_A)^2 + (z_B - z_A)^2}$."
+      },
+      {
+        id: 5,
+        type: "Theory • Angle Sign",
+        question: "If two non-zero vectors $\\vec{a}=(x; y; z)$ and $\\vec{b}=(x'; y'; z')$ satisfy $xx' + yy' + zz' < 0$, what type of angle is $(\\vec{a}, \\vec{b})$?",
+        options: [
+          "An acute angle ($0^\\circ \\le \\varphi < 90^\\circ$)",
+          "A right angle ($\\varphi = 90^\\circ$)",
+          "An obtuse angle ($90^\\circ < \\varphi \\le 180^\\circ$)",
+          "A zero angle ($\\varphi = 0^\\circ$)"
+        ],
+        correctIndex: 2,
+        explanation: "When $\\vec{a}\\cdot\\vec{b} < 0$, $\\cos(\\vec{a}, \\vec{b}) < 0$, which means the angle between the two vectors is obtuse ($90^\\circ < \\varphi \\le 180^\\circ$)."
+      },
+      {
+        id: 6,
+        type: "Calculation • Dot Product",
+        question: "In $Oxyz$, given $\\vec{u}=(2; -1; 3)$ and $\\vec{v}=(1; 4; -2)$. Calculate the dot product $\\vec{u}\\cdot\\vec{v}$.",
+        options: [
+          "$-8$",
+          "$8$",
+          "$4$",
+          "$-4$"
+        ],
+        correctIndex: 0,
+        explanation: "$\\vec{u}\\cdot\\vec{v} = 2\\cdot 1 + (-1)\\cdot 4 + 3\\cdot(-2) = 2 - 4 - 6 = -8$."
+      },
+      {
+        id: 7,
+        type: "Calculation • Perpendicularity",
+        question: "Find the parameter $m$ so that $\\vec{a}=(1; -2; 3)$ and $\\vec{b}=(2; m; -1)$ are perpendicular ($\\vec{a} \\perp \\vec{b}$).",
+        options: [
+          "$m = \\frac{1}{2}$",
+          "$m = -\\frac{1}{2}$",
+          "$m = -1$",
+          "$m = 1$"
+        ],
+        correctIndex: 1,
+        explanation: "$\\vec{a} \\perp \\vec{b} \\Leftrightarrow 1\\cdot 2 + (-2)\\cdot m + 3\\cdot(-1) = 0 \\Leftrightarrow -2m - 1 = 0 \\Leftrightarrow m = -\\frac{1}{2}$."
+      },
+      {
+        id: 8,
+        type: "Calculation • Magnitude",
+        question: "In $Oxyz$, what is the magnitude $\\vert{}\\vec{a}\\vert{}$ of the vector $\\vec{a}=(2; -2; 1)$?",
+        options: [
+          "$9$",
+          "$\\sqrt{5}$",
+          "$3$",
+          "$1$"
+        ],
+        correctIndex: 2,
+        explanation: "$\\vert{}\\vec{a}\\vert{} = \\sqrt{2^2 + (-2)^2 + 1^2} = \\sqrt{4 + 4 + 1} = \\sqrt{9} = 3$."
+      },
+      {
+        id: 9,
+        type: "Calculation • Distance",
+        question: "Given two points $A(1; 0; 2)$ and $B(3; -2; 1)$ in $Oxyz$. What is the distance $AB$?",
+        options: [
+          "$3$",
+          "$9$",
+          "$\\sqrt{5}$",
+          "$\\sqrt{17}$"
+        ],
+        correctIndex: 0,
+        explanation: "$\\overrightarrow{AB} = (2; -2; -1) \\Rightarrow AB = \\sqrt{2^2 + (-2)^2 + (-1)^2} = \\sqrt{9} = 3$."
+      },
+      {
+        id: 10,
+        type: "Calculation • Angle",
+        question: "In $Oxyz$, given $\\vec{u}=(1; 0; 0)$ and $\\vec{v}=(1; 1; 0)$. What is the measure of angle $(\\vec{u}, \\vec{v})$?",
+        options: [
+          "$30^\\circ$",
+          "$60^\\circ$",
+          "$45^\\circ$",
+          "$135^\\circ$"
+        ],
+        correctIndex: 2,
+        explanation: "$\\cos(\\vec{u}, \\vec{v}) = \\frac{1\\cdot 1 + 0 + 0}{1 \\cdot \\sqrt{2}} = \\frac{\\sqrt{2}}{2} \\Rightarrow (\\vec{u}, \\vec{v}) = 45^\\circ$."
+      }
+    ];
+
+    // =========================================================================
+    // 2. KẾT NỐI ĐỒNG BỘ THỜI GIAN THỰC (REAL-TIME CLOUD SYNC) VỚI FIRESTORE
+    // =========================================================================
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'dot-product-quiz-12a1';
+    let db = null;
+    let auth = null;
+    let currentUser = null;
+    let liveSubmissions = []; // Dữ liệu đồng bộ thời gian thực từ tất cả điện thoại
+    let unsubscribeSnapshot = null;
+    let activeFirebaseConfig = null;
+
+    let studentName = "";
+    let studentGroup = 1;
+    let currentQIndex = 0;
+    let userAnswers = []; // Mảng lưu { qId, chosenIndex, isCorrect }
+    let quizStartTime = 0;
+    let timerInterval = null;
+    let isQuestionAnswered = false;
+
+    function resolveFirebaseConfig() {
+      // 1. Ưu tiên cấu hình có sẵn từ môi trường chạy
+      if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+        return JSON.parse(__firebase_config);
+      }
+      // 2. Kiểm tra tham số ?cfg= trên URL (tự động nhận khi học sinh quét QR từ GitHub Pages)
+      const urlParams = new URLSearchParams(window.location.search);
+      const encodedCfg = urlParams.get('cfg');
+      if (encodedCfg) {
+        try {
+          const decoded = JSON.parse(atob(decodeURIComponent(encodedCfg)));
+          if (decoded && decoded.apiKey && decoded.projectId) {
+            return decoded;
+          }
+        } catch (e) {
+          console.warn("Invalid cfg URL param:", e);
+        }
+      }
+      // 3. Kiểm tra cấu hình giáo viên đã lưu trên trình duyệt máy chiếu (window.name fallback)
+      if (window.name && window.name.startsWith('FB_CFG:')) {
+        try {
+          return JSON.parse(window.name.slice(7));
+        } catch (e) {
+          console.warn("Invalid window.name cfg:", e);
+        }
+      }
+      return null;
+    }
+
+    function buildShareableQuizUrl() {
+      const baseUrl = window.location.href.split('?')[0].split('#')[0];
+      if (activeFirebaseConfig && typeof __firebase_config === 'undefined') {
+        const encoded = encodeURIComponent(btoa(JSON.stringify(activeFirebaseConfig)));
+        return `${baseUrl}?cfg=${encoded}`;
+      }
+      return baseUrl;
+    }
+
+    async function initCloudSync() {
+      const badge = document.getElementById('cloud-status-badge');
+      try {
+        const firebaseConfig = resolveFirebaseConfig();
+        if (!firebaseConfig) {
+          throw new Error("Missing Firebase config");
+        }
+        activeFirebaseConfig = firebaseConfig;
+
+        if (unsubscribeSnapshot) {
+          unsubscribeSnapshot();
+          unsubscribeSnapshot = null;
+        }
+
+        const app = initializeApp(firebaseConfig, `quizApp_${Date.now()}`);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        // Bắt buộc xác thực trước khi truy vấn Firestore (Rule 3)
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+
+        currentUser = auth.currentUser;
+        if (!currentUser) return;
+
+        badge.className = "text-[10px] font-bold px-2 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300";
+        badge.innerHTML = '<i class="fa-solid fa-wifi mr-1"></i>Live Cloud Sync';
+
+        // Lắng nghe dữ liệu công khai của toàn lớp theo đúng chuẩn đường dẫn (Rule 1 & Rule 2)
+        const publicResultsCol = collection(db, 'artifacts', appId, 'public', 'data', 'quiz_submissions');
+        unsubscribeSnapshot = onSnapshot(
+          publicResultsCol,
+          (snapshot) => {
+            const fetched = [];
+            snapshot.forEach((docSnap) => {
+              fetched.push({ docId: docSnap.id, ...docSnap.data() });
+            });
+            liveSubmissions = fetched;
+            updateTeacherDashboard();
+          },
+          (error) => {
+            console.error("Firestore onSnapshot error:", error);
+            badge.className = "text-[10px] font-bold px-2 py-0.2 rounded-full bg-rose-500/20 text-rose-300";
+            badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i>Sync Error';
+          }
+        );
+      } catch (err) {
+        console.warn("Running in standalone memory mode:", err);
+        badge.className = "text-[10px] font-bold px-2 py-0.2 rounded-full bg-slate-700 text-slate-300";
+        badge.innerHTML = '<i class="fa-solid fa-desktop mr-1"></i>Local Session';
+      }
+    }
+
+    window.toggleCloudModal = function() {
+      const modal = document.getElementById('cloud-setup-modal');
+      modal.classList.toggle('hidden');
+      document.getElementById('cloud-config-error').classList.add('hidden');
+      if (!modal.classList.contains('hidden') && activeFirebaseConfig) {
+        document.getElementById('input-firebase-config').value = JSON.stringify(activeFirebaseConfig, null, 2);
+      }
+    };
+
+    window.saveCustomCloudConfig = async function() {
+      const rawText = document.getElementById('input-firebase-config').value.trim();
+      const errEl = document.getElementById('cloud-config-error');
+      try {
+        // Cho phép dán cả đoạn JS object (const firebaseConfig = {...}) hoặc JSON thuần
+        const braceStart = rawText.indexOf('{');
+        const braceEnd = rawText.lastIndexOf('}');
+        if (braceStart === -1 || braceEnd === -1) throw new Error("No braces found");
+
+        const objSlice = rawText.slice(braceStart, braceEnd + 1);
+        const normalizedJson = objSlice
+          .replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
+          .replace(/'/g, '"')
+          .replace(/,\s*}/g, '}');
+
+        const parsed = JSON.parse(normalizedJson);
+        if (!parsed.apiKey || !parsed.projectId) throw new Error("Missing required keys");
+
+        errEl.classList.add('hidden');
+        window.name = `FB_CFG:${JSON.stringify(parsed)}`;
+
+        // Cập nhật URL hiện tại có chứa ?cfg= để tiện bookmark hoặc share
+        const encoded = encodeURIComponent(btoa(JSON.stringify(parsed)));
+        const newUrl = `${window.location.href.split('?')[0]}?cfg=${encoded}`;
+        window.history.replaceState({}, '', newUrl);
+
+        toggleCloudModal();
+        await initCloudSync();
+        showToast("Cloud Sync Connected! QR Code is now ready for 51 phones.");
+      } catch (e) {
+        errEl.classList.remove('hidden');
+      }
+    };
+
+    window.clearSavedCloudConfig = function() {
+      window.name = "";
+      activeFirebaseConfig = null;
+      document.getElementById('input-firebase-config').value = "";
+      const cleanUrl = window.location.href.split('?')[0];
+      window.history.replaceState({}, '', cleanUrl);
+      toggleCloudModal();
+      initCloudSync();
+      showToast("Cleared custom cloud config.");
+    };
+
+    window.toggleQrModal = function() {
+      const modal = document.getElementById('qr-modal');
+      modal.classList.toggle('hidden');
+      if (!modal.classList.contains('hidden')) {
+        const shareUrl = buildShareableQuizUrl();
+        const isLocalFile = shareUrl.startsWith('file://');
+        const warnBox = document.getElementById('qr-local-warning');
+        if (isLocalFile) {
+          warnBox.classList.remove('hidden');
+        } else {
+          warnBox.classList.add('hidden');
+        }
+        document.getElementById('current-url-text').textContent = shareUrl;
+        document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(shareUrl)}`;
+      }
+    };
+
+    window.copyQuizLink = function() {
+      const shareUrl = buildShareableQuizUrl();
+      const tempInput = document.createElement('input');
+      tempInput.value = shareUrl;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+      showToast("Quiz link (with live sync key) copied!");
+    };
+
+    window.switchView = function(viewName) {
+      const studentView = document.getElementById('view-student');
+      const teacherView = document.getElementById('view-teacher');
+      const navStudent = document.getElementById('nav-student');
+      const navTeacher = document.getElementById('nav-teacher');
+
+      if (viewName === 'student') {
+        studentView.classList.remove('hidden');
+        teacherView.classList.add('hidden');
+        navStudent.className = "px-3 py-1.5 rounded-xl bg-sky-600 text-white text-xs font-bold shadow-sm transition flex items-center gap-1.5";
+        navTeacher.className = "px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5 relative";
+      } else {
+        studentView.classList.add('hidden');
+        teacherView.classList.remove('hidden');
+        navTeacher.className = "px-3 py-1.5 rounded-xl bg-sky-600 text-white text-xs font-bold shadow-sm transition flex items-center gap-1.5 relative";
+        navStudent.className = "px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition flex items-center gap-1.5";
+        updateTeacherDashboard();
+      }
+    };
+
+    async function saveSubmission(record) {
+      liveSubmissions.push(record);
+      updateTeacherDashboard();
+
+      if (db && currentUser) {
+        try {
+          const publicResultsCol = collection(db, 'artifacts', appId, 'public', 'data', 'quiz_submissions');
+          await addDoc(publicResultsCol, record);
+        } catch (err) {
+          console.error("Error writing submission to Firestore:", err);
+        }
+      }
+    }
+
+    // =========================================================================
+    // 4. LUỒNG LÀM BÀI CỦA HỌC SINH (ĐO TỐC ĐỘ CHÍNH XÁC TỚI 0.1 GIÂY)
+    // =========================================================================
+    window.selectStudentGroup = function(grp) {
+      studentGroup = grp;
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById(`grp-pill-${i}`);
+        if (i === grp) {
+          el.className = "grp-pill py-2.5 rounded-xl border-2 border-sky-600 bg-sky-50 text-sky-800 font-extrabold text-sm transition";
+        } else {
+          el.className = "grp-pill py-2.5 rounded-xl border-2 border-slate-200 bg-white text-slate-700 font-extrabold text-sm transition";
+        }
+      }
+    };
+
+    window.startQuiz = function() {
+      const nameInput = document.getElementById('input-student-name').value.trim();
+      const errBox = document.getElementById('login-error');
+      if (!nameInput) {
+        errBox.classList.remove('hidden');
+        return;
+      }
+      errBox.classList.add('hidden');
+      studentName = nameInput;
+      currentQIndex = 0;
+      userAnswers = [];
+
+      document.getElementById('student-login-box').classList.add('hidden');
+      document.getElementById('student-result-box').classList.add('hidden');
+      document.getElementById('student-quiz-box').classList.remove('hidden');
+
+      quizStartTime = performance.now();
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        const elapsed = (performance.now() - quizStartTime) / 1000;
+        document.getElementById('live-timer-display').textContent = `${elapsed.toFixed(1)}s`;
+      }, 100);
+
+      renderCurrentQuestion();
+    };
+
+    function renderCurrentQuestion() {
+      isQuestionAnswered = false;
+      const q = QUIZ_QUESTIONS[currentQIndex];
+
+      document.getElementById('q-category-badge').textContent = q.type;
+      document.getElementById('q-current-num').textContent = currentQIndex + 1;
+      document.getElementById('quiz-progress-bar').style.width = `${((currentQIndex + 1) / QUIZ_QUESTIONS.length) * 100}%`;
+      document.getElementById('question-text').innerHTML = q.question;
+
+      const feedbackEl = document.getElementById('instant-feedback');
+      feedbackEl.classList.add('hidden');
+
+      const nextBtn = document.getElementById('btn-next-question');
+      nextBtn.disabled = true;
+      nextBtn.className = "px-6 py-3 rounded-2xl bg-slate-200 text-slate-400 font-extrabold text-sm transition flex items-center gap-2 cursor-not-allowed";
+      document.getElementById('btn-next-label').textContent = currentQIndex === QUIZ_QUESTIONS.length - 1 ? "Finish & Submit" : "Next Question";
+
+      const letters = ["A", "B", "C", "D"];
+      const container = document.getElementById('options-container');
+      container.innerHTML = "";
+
+      q.options.forEach((optText, idx) => {
+        const btn = document.createElement('button');
+        btn.type = "button";
+        btn.id = `opt-btn-${idx}`;
+        btn.onclick = () => selectAnswer(idx);
+        btn.className = "option-card w-full text-left p-3.5 sm:p-4 rounded-2xl border-2 border-slate-200 bg-white hover:border-sky-400 hover:bg-sky-50/40 flex items-center gap-3.5";
+        btn.innerHTML = `
+          <span id="opt-letter-${idx}" class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 font-extrabold text-sm flex items-center justify-center shrink-0">
+            ${letters[idx]}
+          </span>
+          <span class="text-sm sm:text-base font-bold text-slate-800">${optText}</span>
+        `;
+        container.appendChild(btn);
+      });
+
+      if (window.MathJax && MathJax.typesetPromise) {
+        MathJax.typesetPromise([document.getElementById('student-quiz-box')]);
+      }
+    }
+
+    function selectAnswer(chosenIdx) {
+      if (isQuestionAnswered) return;
+      isQuestionAnswered = true;
+
+      const q = QUIZ_QUESTIONS[currentQIndex];
+      const isCorrect = chosenIdx === q.correctIndex;
+
+      userAnswers.push({
+        qId: q.id,
+        chosenIndex: chosenIdx,
+        isCorrect: isCorrect
+      });
+
+      q.options.forEach((_, idx) => {
+        const btn = document.getElementById(`opt-btn-${idx}`);
+        const badge = document.getElementById(`opt-letter-${idx}`);
+        btn.disabled = true;
+
+        if (idx === q.correctIndex) {
+          btn.className = "option-card w-full text-left p-3.5 sm:p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50 flex items-center gap-3.5";
+          badge.className = "w-8 h-8 rounded-xl bg-emerald-600 text-white font-extrabold text-sm flex items-center justify-center shrink-0";
+          badge.innerHTML = '<i class="fa-solid fa-check"></i>';
+        } else if (idx === chosenIdx && !isCorrect) {
+          btn.className = "option-card w-full text-left p-3.5 sm:p-4 rounded-2xl border-2 border-rose-500 bg-rose-50 flex items-center gap-3.5";
+          badge.className = "w-8 h-8 rounded-xl bg-rose-600 text-white font-extrabold text-sm flex items-center justify-center shrink-0";
+          badge.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+        } else {
+          btn.className = "option-card w-full text-left p-3.5 sm:p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 opacity-60 flex items-center gap-3.5";
+        }
+      });
+
+      const feedbackEl = document.getElementById('instant-feedback');
+      feedbackEl.classList.remove('hidden');
+      if (isCorrect) {
+        feedbackEl.className = "p-3.5 rounded-2xl text-xs sm:text-sm font-semibold leading-relaxed bg-emerald-50 border border-emerald-200 text-emerald-900";
+        feedbackEl.innerHTML = `<b class="text-emerald-700"><i class="fa-solid fa-circle-check mr-1"></i>Correct!</b> ${q.explanation}`;
+      } else {
+        feedbackEl.className = "p-3.5 rounded-2xl text-xs sm:text-sm font-semibold leading-relaxed bg-rose-50 border border-rose-200 text-rose-900";
+        feedbackEl.innerHTML = `<b class="text-rose-700"><i class="fa-solid fa-circle-xmark mr-1"></i>Not quite!</b> ${q.explanation}`;
+      }
+
+      const nextBtn = document.getElementById('btn-next-question');
+      nextBtn.disabled = false;
+      nextBtn.className = "px-6 py-3 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-sm shadow-md transition flex items-center gap-2 cursor-pointer";
+
+      if (window.MathJax && MathJax.typesetPromise) {
+        MathJax.typesetPromise([feedbackEl]);
+      }
+    }
+
+    window.nextQuestion = function() {
+      if (currentQIndex < QUIZ_QUESTIONS.length - 1) {
+        currentQIndex++;
+        renderCurrentQuestion();
+      } else {
+        finishQuiz();
+      }
+    };
+
+    async function finishQuiz() {
+      clearInterval(timerInterval);
+      const totalSeconds = Number(((performance.now() - quizStartTime) / 1000).toFixed(1));
+      const correctCount = userAnswers.filter(a => a.isCorrect).length;
+      const score10 = correctCount;
+      const avgSpeed = Number((totalSeconds / QUIZ_QUESTIONS.length).toFixed(1));
+
+      const record = {
+        clientId: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        name: studentName,
+        group: studentGroup,
+        correctCount: correctCount,
+        score: score10,
+        totalTime: totalSeconds,
+        avgSpeed: avgSpeed,
+        answers: userAnswers,
+        timestamp: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      };
+
+      document.getElementById('student-quiz-box').classList.add('hidden');
+      document.getElementById('student-result-box').classList.remove('hidden');
+
+      document.getElementById('res-student-name').textContent = studentName;
+      document.getElementById('res-student-group').textContent = `Group ${studentGroup} • Class 12A1`;
+      document.getElementById('res-score').textContent = `${score10}/10`;
+      document.getElementById('res-time').textContent = `${totalSeconds}s`;
+      document.getElementById('res-speed').textContent = `${avgSpeed}s/q`;
+
+      await saveSubmission(record);
+      showToast("Submitted to Live Classroom Leaderboard!");
+    }
+
+    window.resetForNextStudent = function() {
+      document.getElementById('input-student-name').value = "";
+      document.getElementById('student-result-box').classList.add('hidden');
+      document.getElementById('student-login-box').classList.remove('hidden');
+    };
+
+    // =========================================================================
+    // 5. BẢNG XẾP HẠNG GIÁO VIÊN, THỐNG KÊ TỐC ĐỘ & XUẤT FILE EXCEL (.CSV)
+    // =========================================================================
+    function getSortedSubmissions() {
+      // Loại bỏ trùng lặp nếu bản ghi đã đồng bộ từ Firestore
+      const uniqueMap = new Map();
+      liveSubmissions.forEach(item => {
+        const key = item.clientId || item.docId || JSON.stringify(item);
+        uniqueMap.set(key, item);
+      });
+      const list = Array.from(uniqueMap.values());
+
+      // Sắp xếp trong bộ nhớ JS (tuân thủ Rule 2): Điểm cao nhất -> Thời gian nhanh nhất
+      return list.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return a.totalTime - b.totalTime;
+      });
+    }
+
+    function updateTeacherDashboard() {
+      const sorted = getSortedSubmissions();
+      const count = sorted.length;
+
+      document.getElementById('live-count-badge').textContent = count;
+      document.getElementById('stat-total-students').textContent = count;
+
+      const tbody = document.getElementById('leaderboard-tbody');
+      if (count === 0) {
+        document.getElementById('stat-avg-score').textContent = "0.0";
+        document.getElementById('stat-avg-time').textContent = "0.0s";
+        document.getElementById('stat-top-champion').textContent = "Waiting...";
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-10 text-center text-slate-400 text-sm">
+              No student submissions yet. Students can scan the QR code or switch to <b>Student Quiz</b> tab to begin!
+            </td>
+          </tr>
+        `;
+        renderQuestionBreakdown([]);
+        return;
+      }
+
+      const avgScore = (sorted.reduce((sum, s) => sum + s.score, 0) / count).toFixed(1);
+      const avgTime = (sorted.reduce((sum, s) => sum + s.totalTime, 0) / count).toFixed(1);
+      const top1 = sorted[0];
+
+      document.getElementById('stat-avg-score').textContent = avgScore;
+      document.getElementById('stat-avg-time').textContent = `${avgTime}s`;
+      document.getElementById('stat-top-champion').textContent = `${top1.name} (${top1.score}pt • ${top1.totalTime}s)`;
+
+      tbody.innerHTML = "";
+      sorted.forEach((item, index) => {
+        const rank = index + 1;
+        let rankBadge = `<span class="math-font font-bold text-slate-500">#${rank}</span>`;
+        let rowBg = "hover:bg-slate-50";
+
+        if (rank === 1) {
+          rankBadge = `<span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-400 text-slate-900 font-extrabold text-xs shadow-sm"><i class="fa-solid fa-crown"></i></span>`;
+          rowBg = "bg-amber-50/60 hover:bg-amber-50";
+        } else if (rank === 2) {
+          rankBadge = `<span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-300 text-slate-900 font-extrabold text-xs">2</span>`;
+        } else if (rank === 3) {
+          rankBadge = `<span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-200 text-orange-900 font-extrabold text-xs">3</span>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = `${rowBg} transition`;
+        tr.innerHTML = `
+          <td class="py-3 px-4">${rankBadge}</td>
+          <td class="py-3 px-4 font-extrabold text-slate-900">${escapeHtml(item.name)}</td>
+          <td class="py-3 px-4"><span class="px-2.5 py-0.5 rounded-lg bg-sky-100 text-sky-800 text-xs font-bold">Group ${item.group}</span></td>
+          <td class="py-3 px-4 text-center math-font font-bold text-slate-700">${item.correctCount}/10</td>
+          <td class="py-3 px-4 text-center math-font font-extrabold text-sky-700 text-base">${item.score}</td>
+          <td class="py-3 px-4 text-right math-font font-extrabold text-amber-700">${item.totalTime.toFixed(1)}s</td>
+          <td class="py-3 px-4 text-right math-font text-xs text-slate-500">${item.avgSpeed.toFixed(1)}s/q</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      renderQuestionBreakdown(sorted);
+    }
+
+    function renderQuestionBreakdown(submissions) {
+      const grid = document.getElementById('question-analytics-grid');
+      grid.innerHTML = "";
+
+      QUIZ_QUESTIONS.forEach((q, idx) => {
+        let correctTotal = 0;
+        submissions.forEach(sub => {
+          if (sub.answers && sub.answers[idx] && sub.answers[idx].isCorrect) {
+            correctTotal++;
+          }
+        });
+        const pct = submissions.length > 0 ? Math.round((correctTotal / submissions.length) * 100) : 0;
+        const barColor = pct >= 80 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-500" : "bg-rose-500";
+
+        const card = document.createElement('div');
+        card.className = "p-3 rounded-xl border border-slate-200 bg-slate-50/70 space-y-1.5";
+        card.innerHTML = `
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-extrabold text-slate-800">Q${q.id}</span>
+            <span class="math-font font-bold text-slate-600">${pct}%</span>
+          </div>
+          <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+            <div class="h-full ${barColor}" style="width: ${pct}%;"></div>
+          </div>
+          <span class="text-[10px] text-slate-500 block truncate">${q.type.split('•')[1].trim()}</span>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    window.exportResultsCSV = function() {
+      const sorted = getSortedSubmissions();
+      if (sorted.length === 0) {
+        showToast("No results to export yet!");
+        return;
+      }
+
+      const headers = [
+        "Rank",
+        "Student Name",
+        "Group",
+        "Correct Answers",
+        "Score (10-pt Scale)",
+        "Total Time (seconds)",
+        "Avg Speed (sec/question)",
+        "Submitted At",
+        "Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8", "Q9", "Q10"
+      ];
+
+      const rows = sorted.map((s, idx) => {
+        const qCols = QUIZ_QUESTIONS.map((_, qIdx) => {
+          if (!s.answers || !s.answers[qIdx]) return "-";
+          return s.answers[qIdx].isCorrect ? "Correct" : "Wrong";
+        });
+        return [
+          idx + 1,
+          `"${s.name.replace(/"/g, '""')}"`,
+          `Group ${s.group}`,
+          `${s.correctCount}/10`,
+          s.score,
+          s.totalTime.toFixed(1),
+          s.avgSpeed.toFixed(1),
+          s.timestamp,
+          ...qCols
+        ].join(",");
+      });
+
+      const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Grade12A1_DotProduct_Quiz_Results_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showToast("Exported Excel (.CSV) report successfully!");
+    };
+
+    window.simulateClassroomData = async function() {
+      const sampleStudents = [
+        { name: "Tran Gia Bao", group: 2, correct: 10, time: 34.2 },
+        { name: "Le Ngoc Khanh Vy", group: 1, correct: 10, time: 38.7 },
+        { name: "Pham Hoang Nam", group: 4, correct: 10, time: 41.5 },
+        { name: "Nguyen Minh Anh", group: 3, correct: 9, time: 32.8 },
+        { name: "Vo Thanh Dat", group: 1, correct: 9, time: 45.0 },
+        { name: "Dang Thu Ha", group: 2, correct: 8, time: 49.4 }
+      ];
+
+      for (let idx = 0; idx < sampleStudents.length; idx++) {
+        const st = sampleStudents[idx];
+        const fakeAnswers = QUIZ_QUESTIONS.map((q, qIdx) => ({
+          qId: q.id,
+          chosenIndex: qIdx < st.correct ? q.correctIndex : (q.correctIndex + 1) % 4,
+          isCorrect: qIdx < st.correct
+        }));
+        await saveSubmission({
+          clientId: `demo_${Date.now()}_${idx}`,
+          name: st.name,
+          group: st.group,
+          correctCount: st.correct,
+          score: st.correct,
+          totalTime: st.time,
+          avgSpeed: Number((st.time / 10).toFixed(1)),
+          answers: fakeAnswers,
+          timestamp: "10:15:20"
+        });
+      }
+      showToast("Loaded 6 sample student results!");
+    };
+
+    window.clearAllLeaderboard = function() {
+      document.getElementById('clear-confirm-modal').classList.remove('hidden');
+    };
+
+    window.closeClearModal = function() {
+      document.getElementById('clear-confirm-modal').classList.add('hidden');
+    };
+
+    window.confirmClearAllLeaderboard = async function() {
+      closeClearModal();
+      liveSubmissions = [];
+      updateTeacherDashboard();
+
+      if (db && currentUser) {
+        try {
+          const publicResultsCol = collection(db, 'artifacts', appId, 'public', 'data', 'quiz_submissions');
+          const snap = await getDocs(publicResultsCol);
+          const deletePromises = [];
+          snap.forEach((docSnap) => {
+            deletePromises.push(deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'quiz_submissions', docSnap.id)));
+          });
+          await Promise.all(deletePromises);
+        } catch (e) {
+          console.error("Failed to clear cloud records:", e);
+        }
+      }
+      showToast("Cleared all live leaderboard records!");
+    };
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast-banner');
+      toast.textContent = msg;
+      toast.classList.remove('opacity-0');
+      setTimeout(() => toast.classList.add('opacity-0'), 2400);
+    }
+
+    window.onload = async function () {
+      updateTeacherDashboard();
+      await initCloudSync();
+    };
+  </script>
+</body>
+</html>
